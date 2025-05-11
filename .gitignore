@@ -1,0 +1,13 @@
+cli/.zig-cache
+cli/zig-out
+
+backend/CMakeLists.txt
+backend/external
+backend/obfuscation/openssl
+
+__pycache__
+.reserved/
+
+notes/
+.vscode/
+

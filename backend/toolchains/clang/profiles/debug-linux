@@ -1,0 +1,19 @@
+
+set(CMAKE_BUILD_TYPE "Debug" CACHE INTERNAL "Should be changed via the profile files!" FORCE)
+
+set(CMAKE_C_FLAGS   "-O0 -Wall -Wextra -Wunused-result -Wpedantic -Wshadow -Wnull-dereference -Wswitch -gdwarf-4")
+set(CMAKE_CXX_FLAGS "-O0 -Wall -Wextra -Wunused-result -Wpedantic -Wshadow -Wnull-dereference -Wswitch -Wnon-virtual-dtor -gdwarf-4")
+# In release:
+# -Wold-style-cast
+# -Wextra-semi
+set(CMAKE_EXE_LINKER_FLAGS "-fuse-ld=lld -Wl,-Map=output.map")
+
+if(ARTIFACT_TYPE STREQUAL "executable")
+    set(CMAKE_EXE_LINKER_FLAGS "-fuse-ld=lld -Wl,-Map=output.map")
+elseif(ARTIFACT_TYPE STREQUAL "shared library")
+    target_link_options(${PROJECT_NAME} PRIVATE "-fuse-ld=lld" "-Wl,-Map=output.map")
+elseif(ARTIFACT_TYPE STREQUAL "static library")
+    #TODO what flags?
+endif()
+
+# TODO: Change to target_link_options() for all profile flags, instead of setting these global flags!

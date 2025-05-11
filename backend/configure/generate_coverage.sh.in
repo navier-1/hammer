@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Exit on any command failure
+set -e
+
+TEST_EXECUTABLE="@TEST_RUNTIME_DIR@/@testexe@"
+PROJECT_LIB="@CMAKE_RUNTIME_OUTPUT_DIRECTORY@/lib@PROJECT_NAME@@CMAKE_SHARED_LIBRARY_SUFFIX@" # TODO: pecionata temporanea
+
+COVERAGE_INFO="@TEST_RUNTIME_DIR@/coverage.info"
+COVERAGE_DIR="@TEST_RUNTIME_DIR@"
+
+# Cleanup prior reports
+rm -f $COVERAGE_DIR/coverage.profraw
+rm -f $COVERAGE_DIR/coverage.profdata
+rm -f $COVERAGE_DIR/coverage.txt
+
+# Run tests (generates profraw)
+LLVM_PROFILE_FILE="$COVERAGE_DIR/coverage.profraw" $TEST_EXECUTABLE -- --gtest_filter=-*Performance*
+
+# Convert to profdata
+llvm-profdata merge -sparse $COVERAGE_DIR/coverage.profraw -o $COVERAGE_DIR/coverage.profdata
+
+# Generate coverage for the shared library
+llvm-cov show -instr-profile=$COVERAGE_DIR/coverage.profdata $PROJECT_LIB \
+    -format=html \
+    -output-dir=$COVERAGE_DIR \
+    -show-line-counts-or-regions \
+    -show-expansions \
+    -ignore-filename-regex=".*\.h" \
+    -ignore-filename-regex=".*\.hpp"
+
+echo "Coverage report generated at $COVERAGE_DIR/index.html"

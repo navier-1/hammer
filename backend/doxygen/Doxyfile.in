@@ -1,0 +1,69 @@
+# Doxygen configuration file template for generating documentation for both C and C++ files
+
+# Project related settings
+PROJECT_NAME   = @PLACE_BACKEND_SUPPORT_HERE@
+PROJECT_BRIEF  = @PLACE_BACKEND_SUPPORT_HERE@
+
+# TODO: capire come passarlo in modo pratico
+# PROJECT_LOGO           = logo.png
+OUTPUT_DIRECTORY       = docs
+
+# Source code settings
+INPUT                  = src include 
+FILE_PATTERNS          = *.c *.cpp *.h *.hpp
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_METHODS  = NO
+
+# The following options control the format of the generated documentation
+GENERATE_HTML        = YES
+GENERATE_LATEX       = NO
+GENERATE_MAN         = YES   # Enable man pages
+GENERATE_RTF         = YES   # Enable Word docs
+GENERATE_XML         = NO   # Enable XML for tools
+
+# Exclude directories or files if necessary (example: exclude build directories)
+EXCLUDE                = build
+
+# LaTeX settings
+PDF_HYPERLINKS         = YES
+USE_PDFLATEX           = YES
+
+# man settings
+MAN_OUTPUT             = man        # Output directory
+MAN_EXTENSION          = .3         # File extension (e.g., `.3` for C)
+
+
+
+# The default output format for the documentation
+HTML_OUTPUT            = html
+LATEX_OUTPUT           = latex
+
+# Additional settings
+OPTIMIZE_OUTPUT_FOR_C   = YES  # Optimize documentation for C code
+#OPTIMIZE_OUTPUT_FOR_CPP = YES  # Optimize documentation for C++ code
+
+# The following controls how comments are processed and formatted
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+EXTRACT_LOCAL_METHODS  = NO
+
+# Include files like README or other documentation
+FILE_PATTERNS          = *.c *.cpp *.h *.hpp README.md
+
+# Include/exclude specific files or directories
+RECURSIVE              = YES  # To include subdirectories under src
+
+# Documentation output customization
+SHOW_FILES             = YES  # Show source code files in the output
+SHOW_INCLUDE_FILES     = YES  # Show included files in the output
+
+# Other settings
+INLINE_INHERITED_MEMB  = YES
+INLINE_INFO            = YES
+
+# Disable doxygen info prints (warnings will still be displayed)
+QUIET = YES

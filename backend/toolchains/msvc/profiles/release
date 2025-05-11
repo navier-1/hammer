@@ -1,0 +1,6 @@
+# win_release.cmake
+set(CMAKE_BUILD_TYPE "Release" CACHE INTERNAL "Should be changed via the profile files!" FORCE)
+
+# Common Release settings for MSVC
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   /O2 /DNDEBUG")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2 /DNDEBUG")

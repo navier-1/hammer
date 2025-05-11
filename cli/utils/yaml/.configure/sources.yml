@@ -1,0 +1,33 @@
+targets:
+# Both the 'directories' and 'files' lists are optional, but at least one should be provided
+#
+# The path starts with / it is treated as absolute;
+# otherwise it is assumed to be a relative path from the top-level directory
+# of the project.
+
+  - name: some_project
+    includes:
+      - include
+      - other_include
+    directories:
+      - src/crypto
+      - src/pippo
+      - /path/to/some/dir
+
+    files:
+      - sporadic/some_module.c
+      - sporadic/other.cpp
+
+
+
+  - name: that_project_tests
+    directories:
+      - /path/to/src
+      - local/tests
+    files:
+      - testing/this/file.cpp
+      - also/this/one.cpp
+
+    
+
+

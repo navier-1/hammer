@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+    <!-- Add the WiX Util extension to your project -->
+    
+    <Fragment>
+        <!-- Define a property for the checkbox -->
+        <Property Id="ADDTOPATH" Value="1"/>
+        
+        <!-- Component for modifying PATH -->
+        <Component Id="PathComponent" Guid="@PRODUCT_GUID@" Directory="INSTALLFOLDER">
+            <util:Environment Id="PATH" 
+                              Name="PATH" 
+                              Value="[INSTALLFOLDER]\bin" 
+                              Permanent="no" 
+                              Part="last" 
+                              Action="set" 
+                              System="yes" />
+        </Component>
+
+        <!-- Feature to include the PathComponent, based on the checkbox condition -->
+        <!--
+        <Feature Id="ProductFeature" Title="Main Feature" Level="1">
+            <Condition Level="1">ADDTOPATH</Condition>
+            <ComponentRef Id="PathComponent"/>
+        </Feature>
+        -->
+    </Fragment>
+</Wix>

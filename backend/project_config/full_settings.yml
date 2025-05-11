@@ -1,0 +1,70 @@
+# artifact:
+
+# These are the default setting used for compilation, which can be changed 
+# when configuring compilation manually.
+#
+# Run 'hammer config' to do so, or run 'hammer autoconfig' to run with 
+# these compilation parameters and no further interaction.
+#
+# Everything after the 'compilation' mapping is optional and can be omitted.
+
+
+  name: my_awesome_exe
+  target: project
+  type:   executable # executable, "static library", "shared library"
+  version: 0.1.0
+  languages:
+    - lang: c
+      std: 11
+    - lang: c++
+      std: 17
+    # - lang: zig
+    # - lang: asm
+
+  compilation:
+    target-platform: native # native or zig triplet
+    toolchain: clang        # how should they specify the toolchain file name?
+    profile:   debug        # how should they specify the profile file name?
+    build-system: Ninja
+    verbose:     false
+    strip:       false
+      #obfuscate:   false
+
+...
+END OF FILE!
+
+  debugging:
+    sanitize:    false
+
+  quality:
+    lint:        false
+    docs:        false
+
+  testing:
+    coverage-support: false
+    target: test_project
+
+  distribution:
+    generate_installer: false
+
+  static_analysis:
+    codeql: false
+
+  dynamic_analysis:
+    fuzz: false
+    valgrind:
+      tool: none # none, memcheck, cache_profiling, callgraph_profiling, heap_profiling, detect_race_conditions,
+      output: xml
+
+
+  hardening:
+    relro: none          # none, partial, full
+    stack_canaries: none # none, base, strong, all
+    pie: false
+    fortify: 0           # 0, 1, 2
+    tls: false           # don't remember what this is 
+    nx_stack: false
+    nx_heap: false
+    cfi: false
+  
+

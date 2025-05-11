@@ -1,0 +1,58 @@
+# These variables will not show up in the configuration menu unless the user toggles to advanced mode.
+
+advanced_variables:
+  general_purpose:
+    - GENERATE_INSTALLER
+    - DOCUMENTATION
+    - VERBOSE
+    - license_path
+    - INJECT_FAULT
+    - LLVM_STRIP
+    - UNITY_BUILD
+    - COMPILATION_PROFILING
+    - USE_CODEQL
+    - STRIP
+    - LINT
+    - OBFUSCATE
+    - UPDATE_SUBMODULES
+    - SRC_AUTODETECT
+    - SRC_SPECIFY_FILES
+    - SRC_SPECIFY_MODULES
+    - CMAKE_BUILD_TYPE
+
+  gtest:
+    - BUILD_TESTING
+    - BUILD_GMOCK
+    - GTEST_HAS_ABSL
+    - gtest_force_shared_crt
+    - gtest_build_tests
+    - gtest_build_samples
+    - INSTALL_GTEST
+
+  binary_hardening:
+    - CANARY_ALL
+    - CANARY_BASIC
+    - CANARY_STRONG
+    - CFI
+    - FORTIFY_1
+    - FORTIFY_2
+    - HARDEN_ALL
+    - NX_STACK
+    - NX_HEAP
+    - PIE
+    - RELRO_FULL
+    - RELRO_PARTIAL
+    - TLS
+
+  valgrind:
+    - VALGRIND_MEMCHECK
+    - VALGRIND_CACHE_PROFILING
+    - VALGRIND_CALLGRAPH_PROFILING
+    - VALGRIND_HEAP_PROFILING
+    - VALGRIND_DETECT_RC
+    - VALGRIND_OUTPUT_XML
+
+  experimental:
+    - CODE_COVERAGE
+    - FUZZ
+    - HARDENING_OPTS

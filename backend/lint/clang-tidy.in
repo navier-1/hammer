@@ -1,0 +1,15 @@
+Checks: "- readability-*, - bugprone-*, - modernize-*, - cppcoreguidelines-*, - performance-*, - cert-*"
+
+WarningsAsErrors:  '*'
+HeaderFilterRegex: '.*'
+FormatStyle: none
+
+
+
+CheckOptions:
+  - key: modernize-use-auto
+    value: 1
+  - key: readability-identifier-naming.VariableCase
+    value: camelCase
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase

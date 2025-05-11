@@ -1,0 +1,14 @@
+# Here is a general example of a configuration file for dependencies.
+# The only obligatory fields are the 'target' binary to link against and the 'name'.
+# You may optionally specify: 
+#   - a related include path
+#   - multiple static or shared binaries to link
+#   - if the dependency is a git submodule, the path to the submodule
+#
+# If you don't provide any binary by specifying 'shared', 'static' nor 'submodule',
+# the dependency will be treated as a system dependency and searched in the system scope.
+# Otherwise the specific binary you provided will be linked.
+
+local: []
+
+

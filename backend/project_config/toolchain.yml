@@ -1,0 +1,33 @@
+# This is the configuration file that introduces a new compiler and/or linker to Hammer.
+#
+# Provide compiler and linker you want to use; either use their name (clang) or provide the
+# full path to the binaries (/usr/bin/my_special_compiler)
+#
+# If you plan on using features like adding stack canaries and what not, tell hammer what flags
+# it should pass to compiler and linker when you enable those features.
+#
+# This should* allow you to use any compiler and linker you like, even if hammer does not ship with it.
+#
+# Once you are happy with this file, run:
+#
+# $ hammer add-toolchain mytoolchain.yml
+#
+# If it respects the provided yaml schema it will get installed on your system, and now you will be able to
+# use it when building with Hammer. Either hardcode it in your compilation_settings.yml or manually select
+# it when configuring the build in interactive mode with 'hammer config'
+#
+#
+#                                                          *results may vary
+
+
+compiler: clang
+linker: lld
+language: c
+
+# TODO:
+# compiler_flags:
+#  stack_canaries:
+# linker_flags:
+#  stack_canaries: --fno...
+#  pie:
+

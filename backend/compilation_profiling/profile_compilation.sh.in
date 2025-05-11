@@ -1,0 +1,12 @@
+#!/bin/bash
+# If you change the location of this script change the relative paths.
+
+echo "Compacting ninja log"
+cd @CMAKE_BINARY_DIR@
+ninja -t recompact
+
+echo "Extracting compile times from ninja log..."
+@HAMMER_DIR@/compilation_profiling/buildbloat.py @CMAKE_BINARY_DIR@/.ninja_log > @CMAKE_BINARY_DIR@/.compile_profilation_data_raw.json
+
+echo "Exporting profilation info..."
+@HAMMER_DIR@/compilation_profiling/profile_compilation.py @CMAKE_BINARY_DIR@/.compile_profilation_data_raw.json

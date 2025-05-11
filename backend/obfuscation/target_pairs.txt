@@ -1,0 +1,2 @@
+junkle_encrypt s_encrypt
+junkle_decrypt s_decrypt

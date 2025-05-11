@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Compile the C code that parses the template YAML files; will print its findings to screen so you may
+# verify that they match with what you expect.
+
+# Writes the output .cmake files under a fixed path (may want to change this in the future).
+
+gcc -std=c11 -o test_yaml_module \
+    config.c transpile.c dependencies.c sources.c toolchain.c defines.c settings.c\
+    -lcyaml -lyaml -DTESTING_YAML \
+    -static \
+    #-fsanitize=address
+
+# If compilation fails, check if you have yaml and cyaml installed.
+

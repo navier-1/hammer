@@ -1,0 +1,15 @@
+targets:
+# Both the 'directories' and 'files' lists are optional, but at least one should be provided
+#
+# The path starts with / it is treated as absolute;
+# otherwise it is assumed to be a relative path from the top-level directory
+# of the project.
+
+  - name: project
+    includes:
+      - include
+    directories:
+      - src
+
+    files: []
+

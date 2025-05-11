@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Note: no spaces around '='
+BUILD_DIR="@LINTING_RUNTIME_DIR@"
+CLANG_TIDY="@CLANG_TIDY@"
+COMPILE_COMMANDS_DIR="@CMAKE_CURRENT_BINARY_DIR@"
+LOG_FILE="@LOG_FILE@"
+SRC_FILES="@CLANG_TIDY_SRC_FILES@"
+INC_DIRS="@CLANG_TIDY_INCLUDE_DIRS@"
+
+
+if [ -z "$SRC_FILES" ]; then
+    echo "Error: No source files specified."
+    exit 1
+fi
+
+if [ -z "$INC_DIRS" ]; then
+    echo "Error: No include directories specified."
+    exit 2
+fi
+
+for file in $SRC_FILES; do
+    echo "Running Clang-Tidy on: $file"
+    "$CLANG_TIDY" -p="$COMPILE_COMMANDS_DIR" "$file" -checks="*" >> "$LOG_FILE" 2>&1
+done
+
+echo "Clang-Tidy finished. Report saved to $LOG_FILE."

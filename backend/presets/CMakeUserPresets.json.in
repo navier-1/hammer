@@ -1,0 +1,8 @@
+{
+  "version": @PROJECT_VERSION@,
+  "cmakeMinimumRequired": {
+    "major": @PROJECT_VERSION_MAJOR@,
+    "minor": @PROJECT_VERSION_MINOR@,
+    "patch": 0
+  }
+}

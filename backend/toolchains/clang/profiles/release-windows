@@ -1,0 +1,17 @@
+set(CMAKE_BUILD_TYPE "Release" CACHE INTERNAL "Should be changed via the profile files!" FORCE)
+
+set(CMAKE_C_FLAGS   "-fuse-ld=lld -O3 -Wall -Wextra -Wfatal-errors")
+set(CMAKE_CXX_FLAGS "-fuse-ld=lld -O3 -Wall -Wextra -Wfatal-errors")
+
+if(ARTIFACT_TYPE STREQUAL "executable") 
+    set(CMAKE_EXE_LINKER_FLAGS    "-fuse-ld=lld -Wl,/MAP:${CMAKE_CURRENT_BINARY_DIR}/output.map")
+elseif(ARTIFACT_TYPE STREQUAL "shared library") 
+    set(CMAKE_SHARED_LINKER_FLAGS "-fuse-ld=lld -Wl,/MAP:${CMAKE_CURRENT_BINARY_DIR}/output.map")
+elseif()
+    #TODO what flags?
+endif()
+
+
+if(CMAKE_GENERATOR MATCHES "Visual Studio")
+    message(FATAL_ERROR "\n[ERROR] Using a Visual Studio generator, which seems to force MSVC. Configure with -G \"Ninja\". \n")
+endif()

@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# This script:
+# - installs the back-end CMake scripts
+# - compiles the front-end CLI
+# - installs it
+#
+# TODO: check that cyaml is actually brought over.
+
+set -e
+
+# Feel free to change this and install elsewhere!
+HAMMER_INSTALL_DIR="/usr/local/lib/hammer"
+
+# No harm no foul
+./installers/uninstall.sh
+
+
+sudo sed "s|@@HAMMER_INSTALL_DIR@@|$HAMMER_INSTALL_DIR|g" backend/CMakeLists.txt.in > backend/CMakeLists.txt
+sudo cp -r ./backend $HAMMER_INSTALL_DIR
+
+# Build and install CLI
+cd ./cli
+sudo zig build install --prefix /usr/local
+cd ..
+
+# Cleanup
+rm ./backend/CMakeLists.txt
+sudo rm $HAMMER_INSTALL_DIR/CMakeLists.txt.in
+
+echo "Done! Run 'hammer help' to get started."
+

@@ -1,0 +1,5 @@
+
+ - rendere la profilazione del processo di compilazione un'opzione CMake disabilitata di default
+ - ci sono opzioni avanzate per selezionare output grafico, csv...
+
+ 

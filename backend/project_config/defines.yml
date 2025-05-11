@@ -1,0 +1,9 @@
+defines:
+# To define string literals, encapsulate the double-quoted string literal in single-quoted YAML strings.
+# Currently this only supports valueless defines, e.g. #define BUILDING, for conditional compilation
+# Will have to figure out a clean way to allow assigning values like so: #define VAR 42
+
+  - target: project
+    define: []
+
+

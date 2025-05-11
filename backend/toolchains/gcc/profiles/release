@@ -1,0 +1,7 @@
+# release_profile.cmake
+
+set(CMAKE_BUILD_TYPE "Release" CACHE INTERNAL "Should be changed via the profile files!" FORCE)
+
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+

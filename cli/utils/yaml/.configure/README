@@ -1,0 +1,3 @@
+This is simply a collection of templates that can be used to test the yaml module of the CLI.
+It won't actually be used by the binary when it is built and installed.
+
