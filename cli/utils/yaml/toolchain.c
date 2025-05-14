@@ -125,7 +125,10 @@ static int writeToolchain(void* root, char* toolchain_file, char* install_dir) {
     fprintf(toolchain, end_linker);
 
     fclose(toolchain);
+
+    #ifdef MEM_FREE
     free(install_path);
+    #endif
     return 0;
 }
 
@@ -154,7 +157,9 @@ int installToolchain(char* _toolchain_file, char* install_dir) {
     }
 
     int err = writeToolchain(root, toolchain_file, install_dir);
+    #ifdef MEM_FREE
     freeToolchain(root);
+    #endif
 
     if (err) {
         //printf("Failed to transpile the yaml toolchain into cmake\n");

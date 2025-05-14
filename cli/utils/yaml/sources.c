@@ -82,12 +82,7 @@ static const cyaml_schema_value_t targets_schema = {
 
 // Load all source files from specified sources
 static void loadSources(char* sources_file, void** _root) {
-    //struct source_tree* root = NULL;
     struct targets* root = NULL;
-
-    if (!sources_file) {
-        sources_file = (char*)"templates/sources.yml";
-    }
 
     cyaml_err_t err = cyaml_load_file(
         sources_file,
@@ -99,13 +94,13 @@ static void loadSources(char* sources_file, void** _root) {
     );
 
     if (err != CYAML_OK) {
-        printf("Error loading sources file: %s\nError: %s\n", sources_file, cyaml_strerror(err));
+        printf("[loadSources] Error loading sources file: %s\n[CYaml error] %s\n", sources_file, cyaml_strerror(err));
         *_root = NULL;
         return;
     }
 
 #ifdef TESTING_YAML
-    // TODO: update, because yaml structure has changed.
+    // TODO: update, the testing print because yaml structure has changed
 
     // printf("Parsed %u globbed dirs and %u source files from %s \n\n", root->directories_count, root->files_count, sources_file);
 
@@ -134,7 +129,7 @@ static int writeSources(struct source_tree* target) {
     size_t len_filename = strlen(config_files_dir) + strlen(name) + strlen(ext);
     char* filename = malloc(len_filename + 1);
     if (!filename) {
-        printf("Failed to allocate %llu bytes for %s's filename.\n", len_filename, name);
+        printf("[writeSources] Failed to allocate %llu bytes for %s's filename.\n", len_filename, name);
         return 1;
     }
 
@@ -142,7 +137,7 @@ static int writeSources(struct source_tree* target) {
 
     FILE* sources = fopen(filename, "w");
     if (!sources) {
-        printf("Failed to open file: %s \n", filename);
+        printf("[writeSources] Failed to open file: %s \n", filename);
         return 2;
     }
     free(filename);
@@ -197,14 +192,8 @@ static void freeSources(struct targets* root) {
 int compileSources(char* sources_file) {
     struct targets* root = NULL;
 
-    if (sources_file)
-        printf("compileSources() got this sources_file: %s\n", sources_file);
-    else
-        printf("compileSources() got a NULL sources_file.\n");
-
     loadSources(sources_file, (void**)&root);
     if (root == NULL) {
-        printf("Parsing sources failed.\n");
         return 1;
     }
     
@@ -217,7 +206,7 @@ int compileSources(char* sources_file) {
     size_t len_filename = strlen(config_files_dir) + strlen(_targets);
     char* filename = malloc(len_filename + 1);
     if (!filename) {
-        printf("Failed to allocate %llu bytes for %s's filename.\n", len_filename, _targets);
+        printf("[compileSources] Failed to allocate %llu bytes for %s's filename.\n", len_filename, _targets);
         return 1;
     }
 
@@ -225,11 +214,15 @@ int compileSources(char* sources_file) {
 
     FILE* targets = fopen(filename, "w");
     if (!targets) {
-        printf("Failed to open file: %s \n", filename);
+        printf("[compileSources] Failed to open file: %s \n", filename);
+        #ifdef MEM_FREE
         free(filename);
+        #endif
         return 2;
     }
+    #ifdef MEM_FREE
     free(filename);
+    #endif
 
     fprintf(targets, "set(TARGETS \n");
 
@@ -239,7 +232,7 @@ int compileSources(char* sources_file) {
 
         err = writeSources(target);
         if (err) {
-            printf("Failed to emit CMake sources for target: %s\n", target->target);
+            printf("[compileSources] Failed to emit CMake sources for target: %s\n", target->target);
             break;
         }
     }
@@ -247,7 +240,10 @@ int compileSources(char* sources_file) {
     fprintf(targets, ")\n\n");
     fclose(targets);
 
+    #ifdef MEM_FREE
     freeSources(root);
+    #endif
+
     return err;
 }
 

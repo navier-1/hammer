@@ -60,7 +60,7 @@ static void loadDefines(char* defines_file, struct targets** _root) {
     );
         
     if(err != CYAML_OK) {
-        printf("Error loading defines file: %s\n", cyaml_strerror(err));
+        printf("[loadDefines] Error loading defines file: %s\n[CYaml error] %s\n", defines_file, cyaml_strerror(err));
         *_root = NULL;
         return;
     }
@@ -82,7 +82,7 @@ static int writeDefines(struct defines* defines) {
     size_t len_filename = strlen(config_files_dir) + strlen(target) + strlen(ext);
     char* filename = malloc(len_filename + 1);
     if (!filename) {
-        printf("Failed to allocate %llu bytes for %s's defines file name.\n", len_filename, target);
+        printf("[writeDefines] Failed to allocate %llu bytes for %s's defines file name.\n", len_filename, target);
         return 1;
     }
 
@@ -118,7 +118,7 @@ int compileDefines(char* defines_file) {
 
     loadDefines(defines_file, &root);
     if(root == NULL) {
-        printf("Parsing defines failed.\n");
+        printf("[compileDefines] Parsing defines failed.\n");
         return 1;
     }
 
@@ -127,12 +127,15 @@ int compileDefines(char* defines_file) {
         err = writeDefines(root->targets[i]);
 
         if (err) {
-            printf("Failed to emit defines files for CMake.\n");
+            printf("[compileDefines] Failed to emit defines files for CMake.\n");
             break;
         }
     }
 
+    #ifdef MEM_FREE
     freeDefines(root);
+    #endif
+    
     return err;
 }
 

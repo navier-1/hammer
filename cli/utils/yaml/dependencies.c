@@ -126,6 +126,7 @@ static int isPresent(char** arr, unsigned size, const char* value, unsigned* ind
 }
 
 // Arbitrary limit of this many targets; should probably enforce it or it will eventually exceed these.
+// TODO: may want to reorder this part
 #define MAX_TARGETS 10
 #define MAX_NAMESIZE ((size_t)128)
 #define MAX_TARGET_LEN 40
@@ -230,7 +231,7 @@ static FILE** getTargetFiles(char* target) {
 }
 
 
-// TODO: change signature and behavior once super-mapping above local is implemented
+// TODO: change signature and behavior once super-mapping above local is implemented (vcpkg, conan options)
 static int writeDependencies(struct local* local_tree ) {
     struct dependency* lib = NULL;
     // TODO: add some target checking where it checks that the target provided was indeed provided in sources.yml too,
@@ -291,23 +292,23 @@ static void freeDependencies(void* root) {
   cyaml_free(&config, &local_dependencies_schema, root, 0);
 }
 
-
-// TODO: perhaps check in some other way if the targets are valid.
 int compileDependencies(char* dependency_file) {
 
     void* root = NULL;
 
     loadDependencies(dependency_file, &root);
     if(root == NULL) {
-        printf("Parsing dependencies failed.\n");
+        printf("[compileDependencies] Parsing dependencies failed.\n");
         return 1;
     }
 
     int err = writeDependencies(root);
+    #ifdef MEM_FREE
     freeDependencies(root);
+    #endif
 
     if (err) {
-        printf("Failed to write dependency files for CMake.\n");
+        printf("[compileDependencies] Failed to write dependency files for CMake.\n");
         return 2;
     }
 

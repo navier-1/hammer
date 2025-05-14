@@ -219,8 +219,10 @@ int compileSettings(char** settings_files, unsigned num_targets) {
             freeSettings(root);
             break;
         }
-
+        
+        #ifdef MEM_FREE
         freeSettings(root);
+        #endif
     }
 
     return err;
