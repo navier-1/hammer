@@ -9,3 +9,6 @@ const cyaml_config_t config = {
 
 // TODO: there is probably a better way to do this.
 const char* config_files_dir = ".configure/.reserved/";
+const char* defaults[5] = {".configure", "dependencies.yml", "sources.yml", "defines.yml", "settings.yml"};
+
+const char* default_toolchain_file    = "toolchain.yml"; // TODO: should remove from here and implement the add-toolchain functionality

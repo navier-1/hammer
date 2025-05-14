@@ -85,10 +85,9 @@ static void loadSources(char* sources_file, void** _root) {
     //struct source_tree* root = NULL;
     struct targets* root = NULL;
 
-    // TODO: if the defaults are set by the caller, can remove them from here. Might be more elegant to keep here and pass 
-    // NULL if the caller gets no special flags.
-    if (!sources_file)
+    if (!sources_file) {
         sources_file = (char*)"templates/sources.yml";
+    }
 
     cyaml_err_t err = cyaml_load_file(
         sources_file,
@@ -100,7 +99,7 @@ static void loadSources(char* sources_file, void** _root) {
     );
 
     if (err != CYAML_OK) {
-        printf("Error loading sources file: %s\n", cyaml_strerror(err));
+        printf("Error loading sources file: %s\nError: %s\n", sources_file, cyaml_strerror(err));
         *_root = NULL;
         return;
     }
@@ -197,6 +196,11 @@ static void freeSources(struct targets* root) {
 
 int compileSources(char* sources_file) {
     struct targets* root = NULL;
+
+    if (sources_file)
+        printf("compileSources() got this sources_file: %s\n", sources_file);
+    else
+        printf("compileSources() got a NULL sources_file.\n");
 
     loadSources(sources_file, (void**)&root);
     if (root == NULL) {

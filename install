@@ -16,7 +16,7 @@ HAMMER_INSTALL_DIR="/usr/local/lib/hammer"
 ./installers/uninstall.sh
 
 
-sudo sed "s|@@HAMMER_INSTALL_DIR@@|$HAMMER_INSTALL_DIR|g" backend/CMakeLists.txt.in > backend/CMakeLists.txt
+sudo sed "s|@@HAMMER_INSTALL_DIR@@|$HAMMER_INSTALL_DIR|g" backend/CMakeLists.txt > backend/CMakeLists.txt.forreal
 sudo cp -r ./backend $HAMMER_INSTALL_DIR
 
 # Build and install CLI
@@ -25,8 +25,9 @@ sudo zig build install --prefix /usr/local
 cd ..
 
 # Cleanup
-rm ./backend/CMakeLists.txt
-sudo rm $HAMMER_INSTALL_DIR/CMakeLists.txt.in
+rm ./backend/CMakeLists.txt.forreal
+sudo rm $HAMMER_INSTALL_DIR/CMakeLists.txt
+sudo mv $HAMMER_INSTALL_DIR/CMakeLists.txt.forreal $HAMMER_INSTALL_DIR/CMakeLists.txt
 
 echo "Done! Run 'hammer help' to get started."
 

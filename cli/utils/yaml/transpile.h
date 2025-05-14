@@ -4,6 +4,11 @@ int transpileAllConfig(int argc, char* argv[]);
 typedef struct cyaml_config cyaml_config_t;
 
 extern const char* config_files_dir;
+extern const char* defaults[];
+
+// TODO: figure out what to do with this.
+extern const char* default_toolchain_file;
+
 extern const cyaml_config_t config;
 
 int compileDependencies(char* dependencies_file);

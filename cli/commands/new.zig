@@ -28,7 +28,7 @@ pub fn hNew(args: [][:0]u8) anyerror!void {
     var new_dir = try cwd.openDir(args[0], .{});
     defer new_dir.close();
 
-    // Initialize repo with configuration files
+    // Initializes repo with configuration files
     try init.hInit(args);
 
     try setupTemplate(new_dir);
