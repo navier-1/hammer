@@ -60,7 +60,7 @@ static void loadDefines(char* defines_file, struct targets** _root) {
     );
         
     if(err != CYAML_OK) {
-        printf("[loadDefines] Error loading defines file: %s\n[CYaml error] %s\n", defines_file, cyaml_strerror(err));
+        printf("[loadDefines] Error loading defines file: %s\n  [CYaml error] %s\n", defines_file, cyaml_strerror(err));
         *_root = NULL;
         return;
     }
@@ -74,23 +74,23 @@ static void loadDefines(char* defines_file, struct targets** _root) {
 
 // TODO: move the 'dir' variable to the top level and share it between all the cmake writer functions
 
-static int writeDefines(struct defines* defines) {
+static int writeDefines(char* reserved_dir, struct defines* defines) {
 
     const char* target = defines->target; 
     const char* ext = "_defines.cmake"; 
 
-    size_t len_filename = strlen(config_files_dir) + strlen(target) + strlen(ext);
+    size_t len_filename = strlen(reserved_dir) + strlen(target) + strlen(ext) + 1; // + 1 for separator...
     char* filename = malloc(len_filename + 1);
     if (!filename) {
         printf("[writeDefines] Failed to allocate %llu bytes for %s's defines file name.\n", len_filename, target);
         return 1;
     }
 
-    snprintf(filename, len_filename + 1, "%s%s%s", config_files_dir, target, ext); // Includes null terminator
+    snprintf(filename, len_filename + 1, "%s/%s%s", reserved_dir, target, ext);
 
     FILE* defines_file = fopen(filename, "w");
     if (!defines_file) {
-        printf("Failed to open: %s\n", filename);
+        printf("[writeDefines] Failed to open: %s\n", filename);
         return 2;
     }
 
@@ -112,7 +112,7 @@ static void freeDefines(void* root) {
 
 
 
-int compileDefines(char* defines_file) {
+int compileDefines(char* reserved_dir, char* defines_file) {
 
     struct targets* root = NULL;
 
@@ -124,7 +124,7 @@ int compileDefines(char* defines_file) {
 
     int err = 0;
     for (unsigned i = 0; i < root->targets_count; i++) {
-        err = writeDefines(root->targets[i]);
+        err = writeDefines(reserved_dir, root->targets[i]);
 
         if (err) {
             printf("[compileDefines] Failed to emit defines files for CMake.\n");

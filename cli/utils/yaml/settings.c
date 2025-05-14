@@ -90,7 +90,7 @@ static void loadSettings(char* settings_file, struct artifact** _root) {
     );
         
     if(err != CYAML_OK) {
-        printf("Error loading compilation settings file: %s\n", cyaml_strerror(err));
+        printf("[loadSettings] Error loading compilation settings file: %s\n", cyaml_strerror(err));
         *_root = NULL;
         return;
     }
@@ -102,23 +102,23 @@ static void loadSettings(char* settings_file, struct artifact** _root) {
 
 // What this function emits is what could be thought of as the entry-point for the CMake back-end,
 // to pre-configure all parameters based on the yaml.
-static int writeSettings(struct artifact* artifact) {
+static int writeSettings(char* reserved_dir, struct artifact* artifact) {
 
     const char* name = artifact->target; // not name - the name is simply given to the final output binary.
     const char* ext = "_settings.cmake"; 
 
-    size_t len_filename = strlen(config_files_dir) + strlen(name) + strlen(ext);
+    size_t len_filename = strlen(reserved_dir) + strlen(name) + strlen(ext) + 1;
     char* filename = malloc(len_filename + 1);
     if (!filename) {
-        printf("Failed to allocate %llu bytes for %s's defines file name.\n", len_filename, name);
+        printf("[writeSettings] Failed to allocate %llu bytes for %s's defines file name.\n", len_filename, name);
         return 1;
     }
 
-    snprintf(filename, len_filename + 1, "%s%s%s", config_files_dir, name, ext); // Includes null terminator
+    snprintf(filename, len_filename + 1, "%s/%s%s", reserved_dir, name, ext);
 
     FILE* settings_file = fopen(filename, "w");
     if (!settings_file) {
-        printf("Failed to open: %s\n", filename);
+        printf("[writeSettings] Failed to open: %s\n", filename);
         return 2;
     }
 
@@ -200,7 +200,7 @@ static void freeSettings(void* root) {
 // or to simply auto-config one or all of them
 // $ hammer autoconfig --dir build
 // $ hammer autoconfig --dir build --target target_1
-int compileSettings(char** settings_files, unsigned num_targets) {
+int compileSettings(char* reserved_dir, char** settings_files, unsigned num_targets) {
 
     int err = 0;
     struct artifact* root = NULL;
@@ -209,13 +209,13 @@ int compileSettings(char** settings_files, unsigned num_targets) {
 
         loadSettings(settings_files[i], &root);
         if(root == NULL) {
-            printf("Parsing %s failed.\n", settings_files[i]);
+            printf("[compileSettings] Parsing %s failed.\n", settings_files[i]);
             return 1;
         }
 
-        err = writeSettings(root);
+        err = writeSettings(reserved_dir, root);
         if (err) {
-            printf("Failed to emit cmake setting file for %s.\n", root->target);
+            printf("[compileSettings] Failed to emit cmake setting file for %s.\n", root->target);
             freeSettings(root);
             break;
         }

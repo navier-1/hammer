@@ -144,13 +144,15 @@ static void closeTargetFiles() {
         fprintf(handles[i], end);
         fclose(handles[i]);
 
+        #ifdef MEM_FREE
         if (i % NUM_DEPENDENCY_FILES == 0)        
             free(targets[i]);
+        #endif
     }
 }
 
 static FILE** getTargetFiles(char* target) {
-    int idx;
+    unsigned idx;
     if (isPresent(targets, elems_placed, target, &idx)) {
         return &handles[NUM_DEPENDENCY_FILES * idx];
     }
@@ -232,17 +234,25 @@ static FILE** getTargetFiles(char* target) {
 
 
 // TODO: change signature and behavior once super-mapping above local is implemented (vcpkg, conan options)
-static int writeDependencies(struct local* local_tree ) {
+static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
     struct dependency* lib = NULL;
     // TODO: add some target checking where it checks that the target provided was indeed provided in sources.yml too,
     // or we'll definitely end up with cryptic errors later.
 
     FILE *shared, *statics, *system, *includes; // These handles are target-specific and will be set by a getter
-    
-    const char* submod_filename = ".configure/.reserved/project_submodules.cmake";
+ 
+    size_t len_filename = strlen(reserved_dir) + 1 + strlen("submodules.cmake"); // +1 separator...
+    char* submod_filename = malloc(len_filename + 1);
+    if (!submod_filename) {
+        printf("[writeDependencies] Failed to allocate %llu bytes for %s's filename.\n", len_filename, "submodules.cmake");
+        return 1;
+    }
+
+    snprintf(submod_filename, len_filename + 1, "%s/%s", reserved_dir, "submodules.cmake");
+
     FILE *submod = fopen(submod_filename, "w");
     if (!submod) {
-        printf("Failed to open %s.\n", submod_filename);
+        printf("[writeDependencies] Failed to open %s.\n", submod_filename);
         return 1;
     }
     fprintf(submod, "add_subdirectory(\n");
@@ -292,7 +302,7 @@ static void freeDependencies(void* root) {
   cyaml_free(&config, &local_dependencies_schema, root, 0);
 }
 
-int compileDependencies(char* dependency_file) {
+int compileDependencies(char* reserved_dir, char* dependency_file) {
 
     void* root = NULL;
 
@@ -302,7 +312,7 @@ int compileDependencies(char* dependency_file) {
         return 1;
     }
 
-    int err = writeDependencies(root);
+    int err = writeDependencies(reserved_dir, root);
     #ifdef MEM_FREE
     freeDependencies(root);
     #endif

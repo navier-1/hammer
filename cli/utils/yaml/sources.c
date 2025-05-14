@@ -94,7 +94,7 @@ static void loadSources(char* sources_file, void** _root) {
     );
 
     if (err != CYAML_OK) {
-        printf("[loadSources] Error loading sources file: %s\n[CYaml error] %s\n", sources_file, cyaml_strerror(err));
+        printf("[loadSources] Error loading sources file: %s\n  [CYaml error] %s\n", sources_file, cyaml_strerror(err));
         *_root = NULL;
         return;
     }
@@ -120,20 +120,20 @@ static void loadSources(char* sources_file, void** _root) {
 
 // TODO: consider performing globbing here instead of delegating to CMake.
 // Need to investigate if this is actually better in some way.
-static int writeSources(struct source_tree* target) {
+static int writeSources(char* reserved_dir, struct source_tree* target) {
 
     // Construct the filename based on the target's
     const char* name = target->target; 
     const char* ext = "_sources.cmake";
 
-    size_t len_filename = strlen(config_files_dir) + strlen(name) + strlen(ext);
+    size_t len_filename = strlen(reserved_dir) + 1 + strlen(name) + strlen(ext); // +1 separator...
     char* filename = malloc(len_filename + 1);
     if (!filename) {
         printf("[writeSources] Failed to allocate %llu bytes for %s's filename.\n", len_filename, name);
         return 1;
     }
 
-    snprintf(filename, len_filename + 1, "%s%s%s", config_files_dir, name, ext); // Includes null terminator
+    snprintf(filename, len_filename + 1, "%s/%s%s", reserved_dir, name, ext);
 
     FILE* sources = fopen(filename, "w");
     if (!sources) {
@@ -189,7 +189,7 @@ static void freeSources(struct targets* root) {
 }
 
 
-int compileSources(char* sources_file) {
+int compileSources(char* reserved_dir, char* sources_file) {
     struct targets* root = NULL;
 
     loadSources(sources_file, (void**)&root);
@@ -203,23 +203,26 @@ int compileSources(char* sources_file) {
 
     // Prepare list of targets
     const char* _targets = "targets.cmake";
-    size_t len_filename = strlen(config_files_dir) + strlen(_targets);
+    size_t len_filename = strlen(reserved_dir) + strlen(_targets) + 1; // +1 for '/' separator
     char* filename = malloc(len_filename + 1);
     if (!filename) {
         printf("[compileSources] Failed to allocate %llu bytes for %s's filename.\n", len_filename, _targets);
         return 1;
     }
 
-    snprintf(filename, len_filename + 1, "%s%s", config_files_dir, _targets); // Includes null terminator
+    snprintf(filename, len_filename + 1, "%s/%s", reserved_dir, _targets); // Includes null terminator
 
     FILE* targets = fopen(filename, "w");
     if (!targets) {
         printf("[compileSources] Failed to open file: %s \n", filename);
+
         #ifdef MEM_FREE
         free(filename);
         #endif
+
         return 2;
     }
+
     #ifdef MEM_FREE
     free(filename);
     #endif
@@ -230,7 +233,7 @@ int compileSources(char* sources_file) {
         target = root->targets[i];
         fprintf(targets, "  %s\n", target->target);
 
-        err = writeSources(target);
+        err = writeSources(reserved_dir, target);
         if (err) {
             printf("[compileSources] Failed to emit CMake sources for target: %s\n", target->target);
             break;

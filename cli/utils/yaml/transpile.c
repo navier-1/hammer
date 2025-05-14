@@ -6,7 +6,7 @@
 
 
 // Linear search for flag
-static inline void getFlag(unsigned argc, char** argv, const char* flag, char** out_value) {
+static void getFlag(unsigned argc, char** argv, const char* flag, char** out_value) {
     if (argc == 0) {
         *out_value = NULL;
         return;
@@ -14,9 +14,9 @@ static inline void getFlag(unsigned argc, char** argv, const char* flag, char** 
 
     for (unsigned i = 0; i < argc - 1; i++) { // -1 to account for last arg not being a possible flag with value
         if (strcmp(argv[i], flag) == 0) {
-            *out_value = malloc(strlen(argv[i]) + 1); //Assumes best intentions from user...
+            *out_value = malloc(strlen(argv[i + 1]) + 1); //Assumes best intentions from user
             if (!out_value) {
-                printf("Yaml module failed to allocate memory to read cli argument: %d.\n", i);
+                printf("[Yaml module] Failed to allocate memory to read cli argument: %d.\n", i);
                 exit(1);
             }
 
@@ -46,26 +46,21 @@ int transpileAllConfig(int argc, char* argv[]) {
 #endif
 
     int err = 0;
-
-    // TODO: The Zig caller function should ensure the directory we're building in actually does exist,
-    // and try creating it if it doesn't!
-
     char* files[NUM_FILES] = {NULL};
 
     // TODO:
     // Since it will be much more common for the defaults to be applied,
-    // could it be better to start off with them?
+    // could it be better to start off with them? I suspect its indifferent but I should think a bit more about this.
     
-    char* toolchain_file = NULL; // probably to be removed
-
+    char* toolchain_file = NULL; // remove this from here
 
     // Check if any of the files were set from CLI
     for (int i = 0; i < NUM_FILES; i++)
         getFlag(argc, argv, flags[i], &files[i]);
-    
+
     // Anything that still needs to be filled will be filled from defaults
-    if (files[0] == NULL) {        
-        files[0] = malloc(strlen(defaults[IDX_CONFIG]) + 1);
+    if (files[IDX_CONFIG] == NULL) {
+        files[IDX_CONFIG] = malloc(strlen(defaults[IDX_CONFIG]) + 1);
         if (!files[0]) {
             printf("[transpileAllConfig] Failed to allocate memory.\n");
             exit(1);
@@ -73,13 +68,20 @@ int transpileAllConfig(int argc, char* argv[]) {
         strcpy(files[IDX_CONFIG], defaults[IDX_CONFIG]);
     }
 
-    
+    size_t reserved_dir_len = strlen(files[IDX_CONFIG]) + strlen(".reserved") + 1; // +1 separator /
+    char* reserved_dir = malloc(reserved_dir_len + 1); // +1 terminator
+    if(!reserved_dir) {
+        printf("[transpileAllConfig] Failed to allocate memory for reserved dir path.\n");
+        return -1;
+    }
+    snprintf(reserved_dir, reserved_dir_len + 1, "%s/%s", files[IDX_CONFIG], ".reserved");
+
+
     char* filename = NULL;
     char* file_path = NULL;
     size_t file_path_len = 0;
 
     for (int i = 1; i < NUM_FILES; i++) { // skip first file (the config dir)
-
 
         if (files[i] == NULL)
             filename = (char*)defaults[i]; // won't be modified anyways
@@ -90,29 +92,26 @@ int transpileAllConfig(int argc, char* argv[]) {
         file_path = malloc(file_path_len + 1);                   // +1 terminator
         if (!file_path) {
             printf("[transpileAllConfig] Buy more RAM.\n");
-            return -1;
+            return -2;
         }
 
         // TODO: figure out managing the '/' on Windows
-        snprintf(file_path, file_path_len + 1, "%s/%s", files[0], filename); // Includes null terminator
+        snprintf(file_path, file_path_len + 1, "%s/%s", files[IDX_CONFIG], filename);
 
         #ifdef MEM_FREE
         if (files[i])
-            free(files[i]);
+            free(files[i]); // free the cli copy about to be overwritten
         #endif
 
         files[i] = file_path;
-
     }
 
-    // Finally, I should have valid files to pass around
+    err |= compileSources(reserved_dir, files[IDX_SOURCES]);
+    err |= compileDependencies(reserved_dir, files[IDX_DEPENDENCIES]);
+    err |= compileDefines(reserved_dir, files[IDX_DEFINES]);
+    err |= compileSettings(reserved_dir, &files[IDX_SETTINGS], 1);     // TODO: finish stitching this together with the Zig module so that it can actually receive the setting files list
 
-    err |= compileSources(files[IDX_SOURCES]);
-    err |= compileDependencies(files[IDX_DEPENDENCIES]);
-    err |= compileDefines(files[IDX_DEFINES]);
 
-    // TODO: finish stitching this together with the Zig module so that it can actually receive the setting files list
-    err |= compileSettings(&files[IDX_SETTINGS], 1);
     // Note: there is a slight asymmetry for the settings file. Since its way more cumbersome than the others, I thought it might
     // be better to break it up in one setting file per target.
     
@@ -122,13 +121,8 @@ int transpileAllConfig(int argc, char* argv[]) {
     if (err)
         printf("Something went wrong.\n");
     else
-        printf("No errors detected - all yaml files were parsed and compiled to cmake.\n");
+        printf("No errors detected - all test yaml files were parsed and compiled to cmake.\n");
     #endif
-
-    // May want to simply leak memory for speed. Maybe make this an option when compiling hammer from source,
-    // enable a certain flag to skip all memory releases (which are not that big anyways) and get max
-    // performance. Alternatively, since leaking memory is memory safe, simply opt the user into blazing speed
-    // I like this option a lot.
 
     #ifdef MEM_FREE
     for (int i = 0; i < NUM_FILES; i++)
