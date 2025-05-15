@@ -10,3 +10,6 @@ pub const config_files = [_][]const u8{
     "sources.yml",
     //"hidden.yml",
 };
+
+// TODO: figure out how to do this from the build system
+pub const release_memory: bool = false;

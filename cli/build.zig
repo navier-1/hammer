@@ -12,7 +12,8 @@ pub fn build(b: *std.Build) void {
         "-std=c11",
         "-static", // embed yaml & cyaml in the binary
 
-        // "-DMEM_FREE", // Optional: free memory, or don't to get more speed
+        // Figure out how to do this conditionally
+        // "-DMEM_FREE",
     };
 
     exe.linkLibC();

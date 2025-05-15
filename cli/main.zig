@@ -1,11 +1,12 @@
 const std = @import("std");
 const InstallDir = @import("configuration.zig").InstallDir;
 const mod_commands = @import("commands/commands.zig");
+
 const commands = mod_commands.commands;
 const printCommands = mod_commands.printCommands;
 
 const stdout = std.io.getStdOut().writer();
-// const allocator = std.heap.page_allocator;
+
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 

@@ -3,7 +3,7 @@ const std = @import("std");
 const mod_new = @import("new.zig");
 const mod_init = @import("init.zig");
 const mod_help = @import("help.zig");
-const mod_build = @import("build.zig");
+const mod_build = @import("_build.zig");
 const mod_config = @import("config.zig");
 
 const hNew = mod_new.hNew;
