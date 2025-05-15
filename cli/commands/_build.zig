@@ -3,8 +3,6 @@ const process = @import("../utils/process.zig");
 const search = @import("../utils/search-filesystem.zig");
 const release_memory = @import("../configuration.zig").release_memory;
 
-const revSearch = search.revSearch;
-
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
 
@@ -17,7 +15,7 @@ pub fn hBuild(args: [][:0]u8) anyerror!void {
             build_dir = args[0];
     } else {        
         const target: [:0]const u8 = ".configure"; // TODO: read the configuration dir from (heh) configuration, or set in build script.
-        const project_dir = try revSearch(allocator, target);
+        const project_dir = try search.revSearch(allocator, target);
         build_dir = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, "build"});
         if (release_memory) allocator.free(project_dir);
 
