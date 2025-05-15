@@ -72,7 +72,7 @@ static void loadDependencies(char* dependency_file, void** _root) {
     );
         
     if(err != CYAML_OK) {
-        printf("Error loading dependencies file: %s\n", cyaml_strerror(err));
+        printf("[loadDependencies] Error loading dependencies file: %s\n  [CYaml error] %s\n", dependency_file, cyaml_strerror(err));
         *_root = NULL;
         return;
     }
@@ -273,14 +273,27 @@ static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
         system   = handles[2];
         includes = handles[3];
 
-        for (int j = 0; j < lib->shared_count; j++)
-            fprintf(shared, "  %s\n", lib->shared[j]);
+        for (int j = 0; j < lib->shared_count; j++) {  // TODO: replace these if() ... else snippets with a small inlined function for code readability
+            if (lib->shared[j][0] != '/') // is relative path
+                fprintf(shared, "  ${PROJECT_DIR}/%s\n", lib->shared[j]);
+            else
+                fprintf(shared, "  %s\n", lib->shared[j]);
+        }
 
-        for (int j = 0; j < lib->statics_count; j++)
-            fprintf(statics, "  %s\n", lib->statics[j]);
+        for (int j = 0; j < lib->statics_count; j++) {
+            if (lib->statics[j][0] != '/')
+                fprintf(statics, "  ${PROJECT_DIR}/%s\n", lib->statics[j]);
+            else
+                fprintf(statics, "  %s\n", lib->statics[j]);
+        }
 
-        if (lib->include != NULL)
-            fprintf(includes, "  %s\n", lib->include);
+        if (lib->include != NULL) {
+            if (lib->include[0] != '/')
+                fprintf(includes, "  ${PROJECT_DIR}/%s\n", lib->include);
+            else
+                fprintf(includes, "  %s\n", lib->include);
+        }
+        
 
         if ( !lib->shared && !lib->statics ) // i.e. no specific binary was provided (can they still specify a specific include dir? or should I change how I write system?)
             fprintf(system, "  %s\n", lib->name);

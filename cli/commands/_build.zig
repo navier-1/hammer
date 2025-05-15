@@ -18,7 +18,6 @@ pub fn hBuild(args: [][:0]u8) anyerror!void {
         const project_dir = try search.revSearch(allocator, target);
         build_dir = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, "build"});
         if (release_memory) allocator.free(project_dir);
-
     }
 
     // TODO: pass any further args from the user (e.g. -j16 for Make); this is the same as what is done in the config command

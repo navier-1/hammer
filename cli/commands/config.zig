@@ -7,13 +7,14 @@ const std = @import("std");
 
 const process = @import("../utils/process.zig");
 const parsing = @import("../utils/parsing.zig");
-const configuration = @import("../configuration.zig");
 const transpile = @import("../utils/transpile.zig");
+const configuration = @import("../configuration.zig");
 const search = @import("../utils/search-filesystem.zig");
 
 const run = process.run;
-const checkFlag = parsing.checkFlag;
 const revSearch = search.revSearch;
+const getFlagValue = parsing.getFlagValue;
+const getFlag = parsing.getFlag;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
@@ -36,32 +37,40 @@ fn config(args: [][:0]u8) anyerror!ConfigParams {
 
     // CMakeLists.txt may or may not exist in the project dir - check
     // TODO: Perform a revParse on this, too? So even traditional projects can be built from within the repository.
-    var cml: ?std.fs.File = null;
-    cml = cwd.openFile("CMakeLists.txt", .{}) catch |err| switch (err) {
-        error.FileNotFound => null,
-        else => return err,
-    };
+    // var cml: ?std.fs.File = null;
+    // cml = cwd.openFile("CMakeLists.txt", .{}) catch |err| switch (err) {
+    //     error.FileNotFound => null,
+    //     else => return err,
+    // };
 
     var project_dir: [:0]const u8 = undefined;
+    var is_cmakelists_present: bool = undefined;
 
     // TODO: probably can omit the cml variable entirely, and place the openDir() call here.
-    if (cml) |_| {
-        cml_dir = ".";
-        cml.?.close();
+    if (cwd.access("CMakeLists.txt", .{})) |_| {
+        is_cmakelists_present = true;
+    } else |_| {
+        is_cmakelists_present = false;
+    }
 
-        project_dir = try allocator.dupeZ(u8, cml_dir);
-    } else {
-        // Reverse search from pwd for the configuration directory
+
+    if (is_cmakelists_present and !getFlag(args, "--override")) { // TODO: the parsing functions should remove consumed args from the args list, or they will be passed to cmake.
         
-        // TODO: read the configuration dir from (heh) configuration, or set in build script.
-        const target: [:0]const u8 = ".configure";
+        cml_dir = ".";
+        project_dir = try allocator.dupeZ(u8, cml_dir);
+
+    } else { // The configuration is fully up to Hammer
+        
+        // Reverse search from pwd for the configuration directory
+        const target: [:0]const u8 = ".configure"; // TODO: read the configuration dir from (heh) configuration, or set in build script.
         project_dir = revSearch(allocator, target) catch |err| switch (err) {
             error.NotFound => {
                 try std.io.getStdOut().writer().print("Failed to locate configuration directory '{s}'.\nTry going to the top level and run:\nhammer init\n.", .{target});
                 std.process.exit(0);
             },
             else => return err,
-        }; // This dynamically allocated string will be released at the very end, after configuration.
+        };
+        // This dynamically allocated string will (may) be released at the very end.
 
         // --- Create compilation dir ---
         const reserved_dir_path = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, ".configure/.reserved"});
@@ -87,7 +96,6 @@ fn config(args: [][:0]u8) anyerror!ConfigParams {
             transpile_args[2 + i] = arg;
         }
 
-
         // Calls the C code that loads the yaml configuration files and generates cmake files for the back-end.
         try transpile.transpileConf(transpile_args);
     }
@@ -96,8 +104,8 @@ fn config(args: [][:0]u8) anyerror!ConfigParams {
         if (args[0][0] != '-') // should be a valid name
             build_dir = args[0];
 
-        build_system = checkFlag("-G", args) orelse build_system;
-        cml_dir = checkFlag("-S", args) orelse cml_dir;
+        build_system = getFlagValue(args, "-G") orelse build_system;
+        cml_dir = getFlagValue(args, "-S") orelse cml_dir;
     }
 
     const conf: ConfigParams = .{
@@ -133,7 +141,9 @@ fn buildCommand(list: *std.ArrayList([:0]const u8), conf: *const ConfigParams, a
 
     // Append any further args for CMake
     for (args) |arg| {
-        try list.append(arg);
+        if (!std.mem.eql(u8, arg, "--override")) { // this is what we call a pork-around (TODO: fix this garbage)
+            try list.append(arg);
+        }
     }
 }
 
@@ -151,6 +161,7 @@ pub fn hConfig(args: [][:0]u8) anyerror!void {
     try build_args.append("-DINTERACTIVE=ON");
     try buildCommand(&build_args, &conf, args);
 
+    // TODO: 
     const arglist = try build_args.toOwnedSlice();
     try run(arglist);
 

@@ -15,9 +15,8 @@ pub fn main() !void {
         try stdout.print("Failed to allocate memory for CLI arguments.\n", .{});
         return;
     };
-    const argc: usize = args.len;
 
-    if (argc == 1) {
+    if (args.len == 1) {
         try stdout.print("Usage: hammer [command] [options]\n", .{});
         try printCommands();
         return;
