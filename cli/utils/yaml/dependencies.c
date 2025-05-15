@@ -278,9 +278,9 @@ static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
 
         for (int j = 0; j < lib->requires_count; j++) {
             if (memcmp(lib->requires[j]->type, "shared", 6) == 0)
-                fprintf(shared,  "  ${${%s}_BINARY}\n", lib->requires[j]->target);
+                fprintf(shared,  "  ${%s_BINARY}\n", lib->requires[j]->target);
             else if (memcmp(lib->requires[j]->type, "static", 6) == 0)
-                fprintf(statics, "  ${${%s}_BINARY}\n", lib->requires[j]->target);
+                fprintf(statics, "  ${%s_BINARY}\n", lib->requires[j]->target);
             else {
                 printf("[writeDependencies] Fatal error: build target '%s' was said to depend on a of unknown type: '%s'\nDepends target may only be set to: shared, static.",
                     lib->target,
