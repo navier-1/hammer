@@ -7,6 +7,12 @@
 #include "transpile.h"
 
 
+// Specifies which targets (if any) are required to build another given target (e.g. the test executable requires the main library)
+struct required {
+    char* target;
+    char* type;
+};
+
 struct dependency {
     char* name;
     char* include;
@@ -18,6 +24,9 @@ struct dependency {
 
     char** statics;
     unsigned statics_count;
+
+    struct required** requires;
+    unsigned requires_count;
 };
 
 struct local {
@@ -30,14 +39,28 @@ static const cyaml_schema_value_t binary_entry_schema = {
     CYAML_VALUE_STRING(CYAML_FLAG_POINTER, char*, 0, CYAML_UNLIMITED),
 };
 
+
+static const cyaml_schema_field_t required_fields[] = {
+    CYAML_FIELD_STRING_PTR("target", CYAML_FLAG_DEFAULT, struct required, target, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("type",   CYAML_FLAG_DEFAULT, struct required, type,   0, CYAML_UNLIMITED),
+    CYAML_FIELD_END
+};
+
+static const cyaml_schema_value_t required_entry_schema = {
+    CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, struct required, required_fields)
+};
+
+
 static const cyaml_schema_field_t dependency_fields[] = {
-    CYAML_FIELD_STRING_PTR("name",    CYAML_FLAG_DEFAULT, struct dependency, name,   0, CYAML_UNLIMITED),
-    CYAML_FIELD_STRING_PTR("target", CYAML_FLAG_DEFAULT,  struct dependency, target, 0, CYAML_UNLIMITED),    
-    CYAML_FIELD_STRING_PTR("include", CYAML_FLAG_DEFAULT | CYAML_FLAG_OPTIONAL, struct dependency, include, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("name",      CYAML_FLAG_DEFAULT,  struct dependency, name,   0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("target",    CYAML_FLAG_DEFAULT,  struct dependency, target, 0, CYAML_UNLIMITED),    
+    CYAML_FIELD_STRING_PTR("include",   CYAML_FLAG_DEFAULT | CYAML_FLAG_OPTIONAL, struct dependency, include, 0, CYAML_UNLIMITED),
     CYAML_FIELD_STRING_PTR("submodule", CYAML_FLAG_DEFAULT | CYAML_FLAG_OPTIONAL, struct dependency, submodule, 0, CYAML_UNLIMITED),
 
-    CYAML_FIELD_SEQUENCE("shared",    CYAML_FLAG_POINTER | CYAML_FLAG_OPTIONAL, struct dependency, shared,  &binary_entry_schema, 0, CYAML_UNLIMITED),
-    CYAML_FIELD_SEQUENCE("static",    CYAML_FLAG_POINTER | CYAML_FLAG_OPTIONAL, struct dependency, statics, &binary_entry_schema, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_SEQUENCE("shared",      CYAML_FLAG_POINTER | CYAML_FLAG_OPTIONAL, struct dependency, shared,  &binary_entry_schema, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_SEQUENCE("static",      CYAML_FLAG_POINTER | CYAML_FLAG_OPTIONAL, struct dependency, statics, &binary_entry_schema, 0, CYAML_UNLIMITED),
+
+    CYAML_FIELD_SEQUENCE("requires",    CYAML_FLAG_POINTER | CYAML_FLAG_OPTIONAL, struct dependency, requires, &required_entry_schema, 0, CYAML_UNLIMITED),
     CYAML_FIELD_END
 };
 
@@ -59,7 +82,6 @@ static const cyaml_schema_value_t local_dependencies_schema = {
 
 /* Missing piece here. The "true" dependency tree, containing locals, vcpkg and conan lists */
 
-
 static void loadDependencies(char* dependency_file, void** _root) {
     struct local* root = NULL; 
     
@@ -76,39 +98,6 @@ static void loadDependencies(char* dependency_file, void** _root) {
         *_root = NULL;
         return;
     }
-
-#ifdef TESTING_YAML
-   printf("Parsed %u libraries. \n\n", root->dependencies_count);
-    for (unsigned i = 0; i < root->dependencies_count; i++) {
-        struct dependency* lib = root->dependencies[i];
-
-        printf("Name: %s\n",   lib->name);
-        printf("Target: %s\n", lib->target);
-
-        if (lib->include != NULL)
-            printf("Include: %s\n", lib->include);
-
-
-        if (lib->shared_count > 0) {
-            printf("Shared binaries:\n");
-            for (int j = 0; j < lib->shared_count; j++)
-                printf("  %s\n", lib->shared[j]);
-        }
-
-        if (lib->statics_count > 0) {
-            printf("Static binaries:\n");
-            for (int j = 0; j < lib->statics_count; j++)
-                printf("  %s\n", lib->statics[j]);
-            printf("\n");
-        }
-
-        if (lib->submodule != NULL) 
-            printf("Git submodule path: %s\n", lib->submodule);
-
-        printf("\n\n");
-    }
-
-#endif
 
     *_root = root;
     return;
@@ -130,7 +119,7 @@ static int isPresent(char** arr, unsigned size, const char* value, unsigned* ind
 #define MAX_TARGETS 10
 #define MAX_NAMESIZE ((size_t)128)
 #define MAX_TARGET_LEN 40
-#define NUM_DEPENDENCY_FILES 4 // includes, shared, static, system - submodules is separate, since its not target-related.
+#define NUM_DEPENDENCY_FILES 4 // includes, shared, static, system; the submodules file is separate, since its not target-related.
 
 
 // Module-scoped arrays
@@ -144,14 +133,14 @@ static void closeTargetFiles() {
         fprintf(handles[i], end);
         fclose(handles[i]);
 
-        #ifdef MEM_FREE
-        if (i % NUM_DEPENDENCY_FILES == 0)        
+        #ifdef MEM_FREE // Is this what causes the crash?
+        if (i % NUM_DEPENDENCY_FILES == 0)
             free(targets[i]);
         #endif
     }
 }
 
-static FILE** getTargetFiles(char* target) {
+static FILE** getTargetFiles(char* reserved_dir, char* target) {
     unsigned idx;
     if (isPresent(targets, elems_placed, target, &idx)) {
         return &handles[NUM_DEPENDENCY_FILES * idx];
@@ -168,37 +157,37 @@ static FILE** getTargetFiles(char* target) {
     strncpy(targets[elems_placed], target, MAX_TARGET_LEN);
 
 
-    // 0.5 Lay out some string pieces
+    // 1. Lay out some string pieces
     const char* include_dirs_string_start = "target_include_directories(";
     const char* shared_libs_string_start  = "target_link_libraries(";
     const char* static_libs_string_start  = "target_link_libraries(";
     const char* system_libs_string_start  = "set(SYSTEM_LIBS"; // TODO: come back to this
 
-    // Open output files
+    // 2. Open output files
     const char* _shared   = "_dependencies_shared.cmake";
     const char* _statics  = "_dependencies_static.cmake";
     const char* _includes = "_dependencies_include.cmake"; // 28 bytes + 1
     const char* _system   = "_dependencies_system.cmake";
 
-    // 1. Construct full file names
+    // 3. Construct full file names
     // Buffers for file names
     char __shared[MAX_NAMESIZE], __statics[MAX_NAMESIZE], __includes[MAX_NAMESIZE], __system[MAX_NAMESIZE];
-    size_t max_filename_len = strlen(config_files_dir) + strlen(target) + strlen(_includes);
+    size_t max_filename_len = strlen(reserved_dir) + strlen(target) + strlen(_includes) + 1; // +1 for '/' separator
     if( max_filename_len > MAX_NAMESIZE) {
         printf("Target name too long. Overall filename would be %llu bytes, but only %llu were reserved on stack.\n", max_filename_len, MAX_NAMESIZE);
         return NULL;
     }
 
     // Other than the 'includes' name, all other names are the same length.
-    size_t len_filename = strlen(config_files_dir) + strlen(target) + strlen(_shared);
+    size_t len_filename = strlen(reserved_dir) + strlen(target) + strlen(_shared) + 1; // +1 for '/' separator
     
     // Note to self: snprintf() adds the null terminator at the end.
-    snprintf(__shared,   len_filename + 1, "%s%s%s", config_files_dir, target, _shared);
-    snprintf(__statics,  len_filename + 1, "%s%s%s", config_files_dir, target, _statics);
-    snprintf(__system,   len_filename + 1, "%s%s%s", config_files_dir, target, _system);
-    snprintf(__includes, len_filename + 2, "%s%s%s", config_files_dir, target, _includes); // 1 longer!
+    snprintf(__shared,   len_filename + 1, "%s/%s%s", reserved_dir, target, _shared);
+    snprintf(__statics,  len_filename + 1, "%s/%s%s", reserved_dir, target, _statics);
+    snprintf(__system,   len_filename + 1, "%s/%s%s", reserved_dir, target, _system);
+    snprintf(__includes, len_filename + 2, "%s/%s%s", reserved_dir, target, _includes); // 1 longer!
 
-    // 2. Now open the files for the first time
+    // 4. Now open the files for the first time
     FILE* shared   = fopen(__shared,   "w");
     FILE* statics  = fopen(__statics,  "w");
     FILE* system   = fopen(__system,   "w");
@@ -210,7 +199,7 @@ static FILE** getTargetFiles(char* target) {
         return NULL;
     }
     
-    // 3. Write CMake boilerplate code
+    // 5. Write CMake boilerplate code
     
     // TODO: should this always be private? Should something specific trigger the change?
     fprintf(shared,   "%s%s PRIVATE\n", shared_libs_string_start,  target);
@@ -218,17 +207,17 @@ static FILE** getTargetFiles(char* target) {
     fprintf(system,   "%s%s PRIVATE\n", system_libs_string_start,  target); // TODO: come back to this!
     fprintf(includes, "%s%s PRIVATE\n", include_dirs_string_start, target);
 
-    // 4. Store handles in array
+    // 6. Store handles in array
     unsigned offset = NUM_DEPENDENCY_FILES * elems_placed;
     handles[offset + 0] = shared;
     handles[offset + 1] = statics;
     handles[offset + 2] = system;
     handles[offset + 3] = includes;
 
-    // 5. Increment static counter of elements placed
+    // 7. Increment static counter of elements placed
     elems_placed++;
 
-    // 6. Return the open file handles
+    // 8. Return the open file handles
     return &handles[offset];
 }
 
@@ -262,7 +251,7 @@ static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
         lib = local_tree->dependencies[i];
 
         // Get appropriate file handles based on the dependency's link target
-        handles = getTargetFiles(lib->target);
+        handles = getTargetFiles(reserved_dir, lib->target);
         if (!handles) {
             printf("setupTargetFile() failed on %s\n", lib->target);
             return 2;
@@ -287,13 +276,26 @@ static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
                 fprintf(statics, "  %s\n", lib->statics[j]);
         }
 
+        for (int j = 0; j < lib->requires_count; j++) {
+            if (memcmp(lib->requires[j]->type, "shared", 6) == 0)
+                fprintf(shared,  "  ${${%s}_BINARY}\n", lib->requires[j]->target);
+            else if (memcmp(lib->requires[j]->type, "static", 6) == 0)
+                fprintf(statics, "  ${${%s}_BINARY}\n", lib->requires[j]->target);
+            else {
+                printf("[writeDependencies] Fatal error: build target '%s' was said to depend on a of unknown type: '%s'\nDepends target may only be set to: shared, static.",
+                    lib->target,
+                    lib->requires[j]->type);
+                return 3;
+            }
+
+        }
+
         if (lib->include != NULL) {
             if (lib->include[0] != '/')
                 fprintf(includes, "  ${PROJECT_DIR}/%s\n", lib->include);
             else
                 fprintf(includes, "  %s\n", lib->include);
         }
-        
 
         if ( !lib->shared && !lib->statics ) // i.e. no specific binary was provided (can they still specify a specific include dir? or should I change how I write system?)
             fprintf(system, "  %s\n", lib->name);
@@ -308,12 +310,19 @@ static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
     fprintf(submod, ")\n\n");
     fclose(submod);
 
+    #ifdef MEM_FREE
+    free(submod_filename);
+    #endif
+
     return 0;
 }
 
+#ifdef MEM_FREE
 static void freeDependencies(void* root) {
   cyaml_free(&config, &local_dependencies_schema, root, 0);
 }
+#endif
+
 
 int compileDependencies(char* reserved_dir, char* dependency_file) {
 
@@ -326,6 +335,7 @@ int compileDependencies(char* reserved_dir, char* dependency_file) {
     }
 
     int err = writeDependencies(reserved_dir, root);
+
     #ifdef MEM_FREE
     freeDependencies(root);
     #endif

@@ -11,10 +11,10 @@ const transpile = @import("../utils/transpile.zig");
 const configuration = @import("../configuration.zig");
 const search = @import("../utils/search-filesystem.zig");
 
-const run = process.run;
+const getFlag = parsing.getFlag;
 const revSearch = search.revSearch;
 const getFlagValue = parsing.getFlagValue;
-const getFlag = parsing.getFlag;
+const release_memory = configuration.release_memory;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
@@ -129,7 +129,13 @@ fn buildCommand(list: *std.ArrayList([:0]const u8), conf: *const ConfigParams, a
     try list.append("-B");
 
     // TODO: Q: will this fuck me up on Windows? A: 100%
-    const build_dir = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{conf.project_dir, "build"});
+    var build_dir: [:0]const u8 = undefined;
+    if(args.len > 0 and args[0][0] != '-') { // i.e. not a flag
+        build_dir = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{conf.project_dir, args[0]});
+    } else {
+        build_dir = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{conf.project_dir, "build"});
+    }
+
     try list.append(build_dir);
     //try list.append(conf.build_dir);
 
@@ -149,23 +155,23 @@ fn buildCommand(list: *std.ArrayList([:0]const u8), conf: *const ConfigParams, a
 
 pub fn hConfig(args: [][:0]u8) anyerror!void {
 
-    // TODO: this should modify args in some way, and remove the consumed args (e.g. -G "Ninja"),
-    // or they'll be passed twice
+    // TODO: this should modify args in some way, and remove the consumed args (e.g. -G Ninja), else they'll be passed twice
     const conf = try config(args);
 
     var build_args = std.ArrayList([:0]const u8).init(allocator);
-    defer build_args.deinit();
 
     // TODO: make the GUI/TUI program configurable
     try build_args.append("ccmake");
     try build_args.append("-DINTERACTIVE=ON");
     try buildCommand(&build_args, &conf, args);
 
-    // TODO: 
     const arglist = try build_args.toOwnedSlice();
-    try run(arglist);
+    try process.run(arglist);
 
-    allocator.free(conf.project_dir); // This free might be causing problems
+    if (release_memory) {
+        allocator.free(conf.project_dir);
+        build_args.deinit();
+    }
 }
 
 pub fn hAutoConfig(args: [][:0]u8) anyerror!void {
@@ -181,7 +187,10 @@ pub fn hAutoConfig(args: [][:0]u8) anyerror!void {
     try build_args.append("--no-warn-unused-cli");
 
     const arglist = try build_args.toOwnedSlice();
-    try run(arglist);
+    try process.run(arglist);
 
-    //allocator.free(conf.project_dir);
+    if (release_memory) {
+        allocator.free(conf.project_dir);
+        build_args.deinit();
+    }
 }

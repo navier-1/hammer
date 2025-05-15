@@ -107,13 +107,16 @@ int transpileAllConfig(int argc, char* argv[]) {
     }
 
     err |= compileSources(reserved_dir, files[IDX_SOURCES]);
-    err |= compileDependencies(reserved_dir, files[IDX_DEPENDENCIES]);
     err |= compileDefines(reserved_dir, files[IDX_DEFINES]);
-    err |= compileSettings(reserved_dir, &files[IDX_SETTINGS], 1);     // TODO: finish stitching this together with the Zig module so that it can actually receive the setting files list
+    err |= compileSettings(reserved_dir, files[IDX_SETTINGS]);
+    err |= compileDependencies(reserved_dir, files[IDX_DEPENDENCIES]);
 
 
     // Note: there is a slight asymmetry for the settings file. Since its way more cumbersome than the others, I thought it might
     // be better to break it up in one setting file per target.
+
+    // Updated note: I am thinking that actually, as soon as I have 2 targets having separate files becomes a pain in the ass.
+    // Will brobably go back to the style where 1 file contains the settings for all targets.
     
     // err |= installToolchain(toolchain_file, "./reserved/"); // Note: install dir should end with '/' if it's not '.'!
     
@@ -121,10 +124,11 @@ int transpileAllConfig(int argc, char* argv[]) {
     if (err)
         printf("Something went wrong.\n");
     else
-        printf("No errors detected - all test yaml files were parsed and compiled to cmake.\n");
+        printf("No errors detected - all test yaml files were parsed and compiled to cmake.\nYou may check the results under .configure/.reserved/\n");
     #endif
 
     #ifdef MEM_FREE
+    free(reserved_dir);
     for (int i = 0; i < NUM_FILES; i++)
         free(files[i]);
     #endif

@@ -1,5 +1,6 @@
 const std = @import("std");
 
+// TODO: try making cli parsing type-safe
 
 pub fn getFlagValue(args: []const [:0]const u8, flag: []const u8) ?[:0]const u8 {
     for (args, 0..args.len) |arg, i| { // TODO: make this args.len - 1

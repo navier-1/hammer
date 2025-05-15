@@ -39,6 +39,13 @@ local:
 
   - target: that_project_tests
     name: myCryptoLib
+    requires:
+      - target: ciccio
+        type: shared
+
+      - target: other_target
+        type: static
+
     #    target: test
 
 

@@ -9,9 +9,6 @@ const cyaml_config_t config = {
     .flags = CYAML_CFG_DEFAULT | CYAML_CFG_CASE_INSENSITIVE,
 };
 
-// TODO: there is probably a better way to do this.
-const char* config_files_dir = ".configure/.reserved/";
-
 
 const char* defaults[NUM_FILES] = {".configure", "dependencies.yml", "sources.yml", "defines.yml", "settings.yml"};
 const char* flags[NUM_FILES]    = {"--config",   "--dependencies",   "--sources",   "--defines",   "--settings"};

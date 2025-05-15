@@ -1,3 +1,4 @@
+settings:
 # These are the default setting used for compilation, which can be changed 
 # when configuring compilation manually.
 #
@@ -6,31 +7,20 @@
 #
 # Everything after the 'compilation' mapping is optional and can be omitted.
 
-name: here_is_the_binary
-target: project
-type:   executable
-version: 0.1.0
-languages:
-  - lang: c
-    std: 11
+  - name: here_is_the_binary
+    target: project
+    type:   executable
+    version: 0.1.0
+    languages:
+      - lang: c
+        std: 11
 
-compilation:
-  target-platform: native
-  #toolchain: clang
-  #profile:   debug-linux
-  #build-system: Ninja
-  verbose:     false
-  strip:       false
-
-# IDEA: for toolchain organization, when a toolchain is added under a certain name, e.g. clang,
-# a dedicated folder is created with the associated profiles.
-#
-# clang.file (format TBD)
-# clang-profiles/
-#   debug
-#   release
-#   other
-#
-# This makes profile selection much easier and intuitive
+    compilation:
+      target-platform: native
+      #toolchain: clang
+      #profile:   debug-linux
+      #build-system: Ninja
+      verbose:     false
+      strip:       false
 
 

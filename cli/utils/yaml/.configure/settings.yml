@@ -1,4 +1,4 @@
-# artifact:
+settings:
 
 # These are the default setting used for compilation, which can be changed 
 # when configuring compilation manually.
@@ -7,25 +7,25 @@
 # these compilation parameters and no further interaction.
 #
 # Everything after the 'compilation' mapping is optional and can be omitted.
-  name: my_executable
-  target: some_project
-  type:   executable
-  version: 0.1.0
-  languages:
-    - lang: c
-      std: 11
-    - lang: c++
-      std: 17
+  - name: my_executable
+    target: some_project
+    type:   executable
+    version: 0.1.0
+    languages:
+      - lang: c
+        std: 11
+      - lang: c++
+        std: 17
 
-    # - lang: zig
-    # - lang: asm
+      # - lang: zig
+      # - lang: asm
 
-  compilation:
-    target-platform: native
-    toolchain: clang        # how should they specify the toolchain file name?
-    profile:   debug        # how should they specify the profile file name?
-    build-system: Ninja
-    verbose:     false
-    strip:       false
-    #obfuscate:   false
+    compilation:
+      target-platform: native
+      toolchain: clang        # how should they specify the toolchain file name?
+      profile:   debug        # how should they specify the profile file name?
+      build-system: Ninja
+      verbose:     false
+      strip:       false
+      #obfuscate:   false
 

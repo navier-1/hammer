@@ -32,6 +32,10 @@ struct artifact {
     struct compilation* compilation;
 };
 
+struct top_level {
+    struct artifact** artifacts;
+    unsigned artifacts_count;
+};
 
 static const cyaml_schema_field_t languages_fields[] = {
     CYAML_FIELD_STRING_PTR("lang", CYAML_FLAG_DEFAULT, struct languages, lang, 0, CYAML_UNLIMITED),
@@ -78,13 +82,26 @@ static const cyaml_schema_value_t artifact_schema = {
     CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, struct artifact, artifact_fields)
 };
 
-static void loadSettings(char* settings_file, struct artifact** _root) {
-    struct artifact* root = NULL; 
-    
+
+static const cyaml_schema_field_t top_level_fields[] = {
+    CYAML_FIELD_SEQUENCE("settings", CYAML_FLAG_POINTER, struct top_level, artifacts, &artifact_schema, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_END
+};
+
+static const cyaml_schema_value_t top_level_schema = {
+    CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, struct top_level, top_level_fields)
+};
+
+
+static void loadSettings(char* settings_file, struct top_level** _root) { // struct artifact** _root) {
+    // struct artifact* root = NULL; 
+    struct top_level* root = NULL;
+
     cyaml_err_t err = cyaml_load_file(
         settings_file,
         &config,
-        &artifact_schema,
+        //&artifact_schema,
+        &top_level_schema,
         (cyaml_data_t**)&root,
         NULL
     );
@@ -130,9 +147,10 @@ static int writeSettings(char* reserved_dir, struct artifact* artifact) {
     // lo devo poter specificare in qualche modo nelle sua dipendenze, e questo deve fornirgli accesso ai binari ottenuti compilando
     // il primo target.
 
-    fprintf(settings_file, "set(PROJECT_NAME %s)\n", artifact->target); // TODO: mi sa che il project name può solo essere per il primo! Vedere cosa definire per gli altri.
+    
+    // fprintf(settings_file, "set(TARGET_NAME %s)\n", artifact->target); // TODO: mi sa che il project name può solo essere per il primo! Vedere cosa definire per gli altri.
+    fprintf(settings_file, "set(${TARGET}_ARTIFACT_TYPE \"%s\" CACHE STRING \"Type of the binary to be emitted\")\n", artifact->type);
     fprintf(settings_file, "set(VERSION %s CACHE STRING \"\" )\n", artifact->version);
-    fprintf(settings_file, "set(ARTIFACT_TYPE \"%s\" CACHE STRING \"Type of the binary to be emitted\")\n", artifact->type);
 
     // languages
     fprintf(settings_file,  "set(LANGUAGES");
@@ -186,11 +204,11 @@ static int writeSettings(char* reserved_dir, struct artifact* artifact) {
     return 0;
 }
 
-
+#ifdef MEM_FREE
 static void freeSettings(void* root) {
-    cyaml_free(&config, &artifact_schema, root, 0);
+    cyaml_free(&config, &top_level_schema, root, 0);
 }
-
+#endif
 
 
 // This way you can then do:
@@ -200,30 +218,32 @@ static void freeSettings(void* root) {
 // or to simply auto-config one or all of them
 // $ hammer autoconfig --dir build
 // $ hammer autoconfig --dir build --target target_1
-int compileSettings(char* reserved_dir, char** settings_files, unsigned num_targets) {
+int compileSettings(char* reserved_dir, char* settings_file) {
 
     int err = 0;
-    struct artifact* root = NULL;
+    //struct artifact* root = NULL;
+    struct top_level* root = NULL;
 
-    for (unsigned i = 0; i < num_targets; i++) {
 
-        loadSettings(settings_files[i], &root);
-        if(root == NULL) {
-            printf("[compileSettings] Parsing %s failed.\n", settings_files[i]);
-            return 1;
-        }
+    loadSettings(settings_file, &root);
+    if(root == NULL) {
+        printf("[compileSettings] Parsing %s failed.\n", settings_file);
+        return 1;
+    }
 
-        err = writeSettings(reserved_dir, root);
+    // TODO: for ... artifacts_count...
+    for (int i = 0; i < root->artifacts_count; i++) {
+        err = writeSettings(reserved_dir, root->artifacts[i]);
+
         if (err) {
-            printf("[compileSettings] Failed to emit cmake setting file for %s.\n", root->target);
-            freeSettings(root);
+            printf("[compileSettings] Failed to emit cmake setting file for %s.\n", root->artifacts[i]->target);
             break;
         }
-        
-        #ifdef MEM_FREE
-        freeSettings(root);
-        #endif
-    }
+    }    
+
+    #ifdef MEM_FREE
+    freeSettings(root);
+    #endif
 
     return err;
 }

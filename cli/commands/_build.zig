@@ -20,8 +20,15 @@ pub fn hBuild(args: [][:0]u8) anyerror!void {
         if (release_memory) allocator.free(project_dir);
     }
 
+    var build_args = std.ArrayList([:0]const u8).init(allocator);
+    try build_args.append("cmake");
+    try build_args.append("--build");
+    try build_args.append(build_dir);
+
+
     // TODO: pass any further args from the user (e.g. -j16 for Make); this is the same as what is done in the config command
-    try process.run(&.{"cmake","--build", build_dir});
+    const arglist = try build_args.toOwnedSlice();
+    try process.run(arglist);
 
     if (release_memory) allocator.free(build_dir);
 }
