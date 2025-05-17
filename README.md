@@ -1,3 +1,5 @@
+![Project thumbnail](assets/thumbnail.jpeg)
+
 ## Overview
 Hammer is a portable and user-friendly set of tools to manage C and C++ projects.
 
