@@ -17,11 +17,9 @@ pub const config_files = [_][]const u8{
 // TODO: figure out how to do this from the build system
 pub const release_memory: bool = false;
 
-
 // --- Remote update variables ---
 
-pub const remote_url = "https://github.com/rtyley/small-test-repo.git" ;    //  ->  "https://github.com/Navier1/hammer.git";
-
+pub const remote_url = "https://github.com/Navier1/hammer";
 pub const tmp_dir = "/tmp/test-clone";
-
 pub const install_script = "install";
+pub const installer_path = tmp_dir ++ "/" ++ install_script; // comptime concatenation

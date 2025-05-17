@@ -23,15 +23,13 @@ pub fn hUpdate(_: [][:0]u8) anyerror!void {
     try process.run(fetch_command);
 
     // I don't like cd'ing much. Might be better to have a comptime variable with the full path to the installer script
-    const install_command = &[_][:0]const u8{
-        "cd", configuration.tmp_dir, "&&", configuration.install_script
-    };
+    const install_command = &[_][:0]const u8{configuration.installer_path};
 
-    process.run(install_command) catch {
-        try std.io.getStdOut().writer().print("Failed to locate installation script '{s}' inside {s}.\nHas the name changed?\n", .{configuration.install_script, configuration.tmp_dir});
-        try runCleanup();
-        return;
-    };
+    try process.run(install_command); // catch {
+    //     try std.io.getStdOut().writer().print("Failed to locate installation script '{s}' inside {s}.\nHas the name changed?\n", .{configuration.install_script, configuration.tmp_dir});
+    //     try runCleanup();
+    //     return;
+    // };
 
 
     try runCleanup();
