@@ -242,6 +242,7 @@ static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
 
     snprintf(submod_filename, len_filename + 1, "%s/%s", reserved_dir, "submodules.cmake");
 
+    int are_submodules_present = 0;
     FILE *submod = fopen(submod_filename, "w");
     if (!submod) {
         printf("[writeDependencies] Failed to open %s.\n", submod_filename);
@@ -304,6 +305,7 @@ static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
             fprintf(system, "  %s\n", lib->name);
 
         if (lib->submodule != NULL) {
+            are_submodules_present = 1;
             if(lib->submodule[0] != '/')
                 fprintf(submod, "  ${PROJECT_DIR}/%s ${CMAKE_BINARY_DIR}/%s-build \n", lib->submodule, lib->name);
             else
@@ -316,6 +318,11 @@ static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
 
     fprintf(submod, ")\n\n");
     fclose(submod);
+
+    if (!are_submodules_present) { // wipe contents
+        submod = fopen(submod_filename, "w");
+        fclose(submod);
+    }
 
     #ifdef MEM_FREE
     free(submod_filename);
