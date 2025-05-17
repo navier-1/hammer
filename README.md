@@ -65,6 +65,7 @@ It provides a few quick commands to organize a project:
     
 ## Installation
 Currently, Linux only.
+
     $ sudo ./installers/fetch-dependencies.sh
     $ sudo ./install
 
@@ -95,6 +96,7 @@ And if you get tired of using hammer? Tell it to off itself.
 A quick guide to writing your first C/C++ program with hammer.
 
 ### Create a repo
+
     $ hammer new MyAwesomeRepo
     $ cd MyAwesomeRepo
 
@@ -110,19 +112,19 @@ A quick guide to writing your first C/C++ program with hammer.
   All build artifacts so far and those coming later are stored under a default build/ directory;
   when configuring one may specify their desired build dir or generator by going
 
-    $ hammer config -B buildHere -G "Unix Makefiles"
+    $ hammer config buildHere -G "Unix Makefiles"
 
   (again, the CMake user will find this familiar)
 
 ### Building the project
-    Fairly straight-up:
+  Fairly straight-up:
 
     $ hammer build              # default build/ directory
     $ hammer build buildHere    #  chosen build directory
 
 ### Check the binary
-    You'll find your emitted binaries under build/bin/
-    If what you configured is an executable (as per default), you may simply run it with:
+  You'll find your emitted binaries under build/bin/
+  If what you configured is an executable (as per default), you may simply run it with:
 
     $ hammer run
     $ hammer run buildHere
@@ -136,8 +138,8 @@ The most important function the CLI performs is reading the yaml configuration f
 compiling them into cmake files to be used during configuration.
 
 ## Going from here
-  There's really nothing new under the sun here. Hammer is just packaging some scripts and utilities, check out
-  what it has available by running 
+There's really nothing new under the sun here. Hammer is just packaging some scripts and utilities, check out
+what it has available by running 
 
     $ hammer help
 
