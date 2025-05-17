@@ -127,28 +127,28 @@ endif()
 include(${CONFIG_DIR}/${TARGET}_sources.cmake)
 
 # Now we add the files from the globbed dirs (There should be a more CMake way to do this...)
-foreach(MODULE_DIR ${GLOBBED_DIRS})
+foreach(MODULE_DIR ${${TARGET}_GLOBBED_DIRS})
     # TODO: remove the hardcoding, making it recognize certain extensions based on the target's specified languages.
     file(GLOB_RECURSE MODULE_SOURCES CONFIGURE_DEPENDS
         "${SRC_DIR}/${MODULE_DIR}/*.c"
         "${SRC_DIR}/${MODULE_DIR}/*.cpp"
     )
-    list(APPEND SRC_FILES ${MODULE_SOURCES})
+    list(APPEND ${TARGET}_SRC_FILES ${MODULE_SOURCES})
 endforeach()
 
 # =======================[ Declare artifact ]===========================
 # This is set by the {TARGET}_settings.cmake file
 
 if (${TARGET}_ARTIFACT_TYPE STREQUAL "executable")
-    add_executable(${TARGET} ${SRC_FILES} ${ZIG_OBJECTS})
+    add_executable(${TARGET} ${${TARGET}_SRC_FILES} ${ZIG_OBJECTS})
     set(${TARGET}_PREFIX "")
     set(${TARGET}_SUFFIX ${CMAKE_EXECUTABLE_SUFFIX})
 elseif (${TARGET}_ARTIFACT_TYPE STREQUAL "static library")
-    add_library(${TARGET} STATIC ${SRC_FILES} ${ZIG_OBJECTS})
+    add_library(${TARGET} STATIC ${${TARGET}_SRC_FILES} ${ZIG_OBJECTS})
     set(${TARGET}_PREFIX ${CMAKE_STATIC_LIBRARY_PREFIX})
     set(${TARGET}_SUFFIX ${CMAKE_STATIC_LIBRARY_SUFFIX})
 elseif (${TARGET}_ARTIFACT_TYPE STREQUAL "shared library")
-    add_library(${TARGET} SHARED ${SRC_FILES} ${ZIG_OBJECTS})
+    add_library(${TARGET} SHARED ${${TARGET}_SRC_FILES} ${ZIG_OBJECTS})
     set(${TARGET}_PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
     set(${TARGET}_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
 else()

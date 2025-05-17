@@ -1,7 +1,5 @@
 // Copyright (c) 2025
 // Licensed under the GPLv3 — see LICENSE file for details.
-
-
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
@@ -27,14 +25,10 @@ static const cyaml_schema_value_t list_schema = {
     CYAML_VALUE_STRING(CYAML_FLAG_POINTER, char*, 0, CYAML_UNLIMITED),
 };
 
-
-// TODO: add CYAML_FLAG_OPTIONAL if necessary!
 static const cyaml_schema_field_t directory_fields[] = {
     CYAML_FIELD_SEQUENCE("directories", CYAML_FLAG_POINTER, struct directories, dirs, &list_schema, 0, CYAML_UNLIMITED),
     CYAML_FIELD_END
 };
-
-
 
 static const cyaml_schema_field_t files_fields[] = {
     CYAML_FIELD_SEQUENCE("files", CYAML_FLAG_POINTER, struct files, files, &list_schema, 0, CYAML_UNLIMITED),
@@ -146,15 +140,12 @@ static int writeSources(char* reserved_dir, struct source_tree* target) {
     }
     free(filename);
 
-    const char* source_files_string_start = "set(SRC_FILES \n";
-    const char* globbed_dirs_start = "set(GLOBBED_DIRS \n";
-    const char* include_dirs_start = "set(INCLUDE_DIRS \n";
     const char* end   = ")\n\n";
 
     // Note to self: there is 100% a cleaner way to write this to reduce duplication, some day I'll get back to this
 
     // Add specific source files
-    fprintf(sources, source_files_string_start);
+    fprintf(sources, "set(%s_SRC_FILES \n", name);
     for (int i = 0; i < target->files_count; i++) {
         if (target->files[i][0] != '/') // is relative path
             fprintf(sources, "  ${PROJECT_DIR}/%s\n", target->files[i]);
@@ -164,7 +155,7 @@ static int writeSources(char* reserved_dir, struct source_tree* target) {
     fprintf(sources, end);
 
     // Add globbed dirs
-    fprintf(sources, globbed_dirs_start);
+    fprintf(sources, "set(%s_GLOBBED_DIRS \n", name);
     for (int i = 0; i < target->directories_count; i++ ) {
         if (target->directories[i][0] != '/') // is relative path
             fprintf(sources, "  ${PROJECT_DIR}/%s\n", target->directories[i]);
@@ -174,7 +165,7 @@ static int writeSources(char* reserved_dir, struct source_tree* target) {
     fprintf(sources, end);
 
     // Add include dirs
-    fprintf(sources, include_dirs_start);
+    fprintf(sources, "set(%s_INCLUDE_DIRS \n", name);
     for (int i = 0; i < target->includes_count; i++) {
         if (target->includes[i][0] != '/') // is relative path
             fprintf(sources, "  ${PROJECT_DIR}/%s\n", target->includes[i]);
