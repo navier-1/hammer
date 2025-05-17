@@ -1,3 +1,6 @@
+// Copyright (c) 2025
+// Licensed under the GPLv3 — see LICENSE file for details.
+
 /* This module provides the schemas and functions to parse the Yaml file that specifies the dependencies.*/
 
 #include <stdio.h>

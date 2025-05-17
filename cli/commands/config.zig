@@ -1,8 +1,5 @@
-// Deve controllare se esiste già un CML.txt; se esiste usa quello
-
-// Se non esiste, controlla se esiste la cartella .config; se non c'è warna di errore ed esce
-
-// Se c'è config, usa il CML.txt del back-end
+// Copyright (c) 2025
+// Licensed under the GPLv3 — see LICENSE file for details.
 const std = @import("std");
 
 const process = @import("../utils/process.zig");
@@ -178,7 +175,6 @@ pub fn hAutoConfig(args: [][:0]u8) anyerror!void {
     const conf = try config(args);
 
     var build_args = std.ArrayList([:0]const u8).init(allocator);
-    defer build_args.deinit();
 
     try build_args.append("cmake");
     try build_args.append("-DPRECONFIG_DONE=ON");

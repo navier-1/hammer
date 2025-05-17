@@ -1,3 +1,7 @@
+// Copyright (c) 2025
+// Licensed under the GPLv3 — see LICENSE file for details.
+
+
 /// This module provides calls the C code that performs transpilation from the Yaml project configuration files to CMake.
 const std = @import("std");
 

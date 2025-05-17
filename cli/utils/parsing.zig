@@ -1,3 +1,6 @@
+// Copyright (c) 2025
+// Licensed under the GPLv3 — see LICENSE file for details.
+
 const std = @import("std");
 
 // TODO: try making cli parsing type-safe

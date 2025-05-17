@@ -1,5 +1,8 @@
-// TODO: rename these structs and fields - this naming is garbage
+// Copyright (c) 2025
+// Licensed under the GPLv3 — see LICENSE file for details.
 
+
+// TODO: rename these structs and fields - this naming is garbage
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>

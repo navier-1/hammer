@@ -1,3 +1,7 @@
+// Copyright (c) 2025
+// Licensed under the GPLv3 — see LICENSE file for details.
+
+
 const std = @import("std");
 const process = @import("../utils/process.zig");
 const search = @import("../utils/search-filesystem.zig");

@@ -1,6 +1,15 @@
+// Copyright (c) 2025
+// Licensed under the GPLv3 — see LICENSE file for details.
+
 const std = @import("std");
 const release_memory = @import("../configuration.zig").release_memory;
 
+pub fn fileExists(dir: std.fs.Dir, path: []const u8) bool {
+    return dir.access(path, .{}) catch |err| switch (err) {
+        error.FileNotFound => false,
+        else => true, // treat other errors as "exists" or handle differently
+    };
+}
 
 /// Searches the filesystem from the cwd upwards, looking for the directory with the
 /// configuration files that would make this a Hammer-managed project.

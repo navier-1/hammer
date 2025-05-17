@@ -1,3 +1,6 @@
+// Copyright (c) 2025
+// Licensed under the GPLv3 — see LICENSE file for details.
+
 const std = @import("std");
 const InstallDir = @import("configuration.zig").InstallDir;
 const mod_commands = @import("commands/commands.zig");

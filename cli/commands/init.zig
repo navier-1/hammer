@@ -1,10 +1,12 @@
-// Controlla se esiste .config; se non esiste la crea
+// Copyright (c) 2025
+// Licensed under the GPLv3 — see LICENSE file for details.
 
-// Se mancano alcuni dei file .yml che si aspetta, li aggiunge
+// TODO: 
+// - If any of the .yml files are missing (e.g. accidentally deleted) they are re-added
+// - if a CMakeLists.txt exists in the target directory, it should warn the user that 
+//   if they want to use the Hammer back-end in that directory they will have to run
+//   $ hammer config --override ; without that flag, the project's CMakeLists.txt takes precedence
 
-// Se esiste un CML.txt nella cartella corrente, deve avvertire
-// che per usare questa configurazione deve usare
-//    $ hammer config --override-cml
 const std = @import("std");
 const allocator = std.heap.page_allocator;
 
@@ -15,7 +17,6 @@ const config_files = configuration.config_files;
 // Note to self:
 // don't think in terms of raw strings for paths like in C;
 // use the std.fs.Dir class and its methods
-
 
 pub fn hInit(args: [][:0]u8) anyerror!void {
 
