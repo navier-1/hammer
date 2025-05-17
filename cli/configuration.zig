@@ -22,7 +22,7 @@ pub const gui_program = "ccmake"; // cmake-gui, other...
 
 // --- Remote update variables ---
 
-pub const remote_url = "https://github.com/Navier1/hammer";
+pub const remote_url = "https://github.com/navier-1/hammer";
 pub const tmp_dir = "/tmp/hammer-clone";
 pub const install_script = "install";
 pub const installer_path = tmp_dir ++ "/" ++ install_script; // comptime concatenation

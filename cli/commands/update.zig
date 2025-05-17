@@ -14,7 +14,8 @@ var allocator = gpa.allocator();
 /// specified in configuration.zig (TODO: make it part of build.zig)
 /// and starts a build + install.
 /// 
-/// Note: this entire function presumes bash and should be rethought for windows...
+/// Note: this entire function presumes bash and should be rethought for windows.
+/// Make it truly portable.
 pub fn hUpdate(_: [][:0]u8) anyerror!void {
 
     const fetch_command = &[_][:0]const u8{
