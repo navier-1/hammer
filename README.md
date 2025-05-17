@@ -1,5 +1,5 @@
 ## Overview
-Hammer is an attempt to provide a unified, portable and user-friendly set of tools to manage C and C++ projects.
+Hammer is a portable and user-friendly set of tools to manage C and C++ projects.
 
 It's a hacky attempt to provide a compact CLI a-la Cargo (Rust's build tool) to configure C/C++ projects
 on Linux and Windows, with provided integrations to several development tools that
@@ -17,8 +17,11 @@ Using CMake currently simplifies legacy support and modularity (e.g. by allowing
 ### Features
 
 * CLI utilities to setup, configure and build new and existing projects
+* Build targets are configured via YAML files
 * Support for multiple compilers, linkers and build systems
-* TODO: quickly go through the main features that may make the project interesting to try out.
+  (at some point, a feature will be added to allow simple addition of 
+  new toolchain files so that one may use hammer with any compiler and linker they prefer)
+
 
 ### Tools involved
 
@@ -31,9 +34,6 @@ language it comes with an amazing toolchain, which allows for easy cross-compila
 
 * When configuring the project, the CLI calls on graphical configuration programs that are built for CMake: 
 [ccmake](https://cmake.org/cmake/help/latest/manual/ccmake.1.html) on Linux, [cmake-gui](https://cmake.org/cmake/help/latest/manual/cmake-gui.1.html) on Windows;
-
-TODO: Mi sa che cmake-gui funziona anche su Linux! Se sì va cambiato il comportamento, in modo che uno possa configurare se la sua
-config sia GUI o TUI.
 
 * Some integration with useful tools for development are provided. For example:
   - test coverage support
@@ -57,8 +57,6 @@ It provides a few quick commands to organize a project:
    $ hammer config
    $ hammer build
    $ hammer docs
-
-[TODO: consider inserting a screenshot of the hammer help list]
 
 Here is a quick snippet into how to go about creating a new project with hammer:
 

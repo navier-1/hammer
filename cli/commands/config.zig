@@ -158,7 +158,7 @@ pub fn hConfig(args: [][:0]u8) anyerror!void {
     var build_args = std.ArrayList([:0]const u8).init(allocator);
 
     // TODO: make the GUI/TUI program configurable
-    try build_args.append("ccmake");
+    try build_args.append(configuration.gui_program);
     try build_args.append("-DINTERACTIVE=ON");
     try buildCommand(&build_args, &conf, args);
 
