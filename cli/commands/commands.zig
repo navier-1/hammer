@@ -10,6 +10,7 @@ const hInit = @import("init.zig").hInit;
 const hClean = @import("clean.zig").hClean;
 const hBuild = @import("_build.zig").hBuild;
 const hUpdate = @import("update.zig").hUpdate;
+const hInstall = @import("install.zig").hInstall;
 const hAutoBuild = @import("autobuild.zig").hAutoBuild;
 
 const config = @import("config.zig");
@@ -36,11 +37,11 @@ pub const commands = [_]Command{
     .{ .name = "clean",      .handler = &hClean,      .help = "Cleans the build directory of its contents", .category = "project"},
 
     // General (consider making the macro-area a further field of the Command type)
-    .{ .name = "help",   .handler = &hHelp,   .help = "Prints detailed guide to commands", .category = "utilities"},
-    .{ .name = "update", .handler = &hUpdate, .help = "Update tool from remote repo",      .category = "utilities"},
+    .{ .name = "help",    .handler = &hHelp,    .help = "Prints detailed guide to commands", .category = "utilities"},
+    .{ .name = "update",  .handler = &hUpdate,  .help = "Update tool from remote repo",      .category = "utilities"},
+    .{ .name = "install", .handler = &hInstall, .help = "Install developer tools",           .category = "utilities"},
 
     // .{.name = "docs", .handler = , .help = ""},
-    // .{.name = "install",   .handler = , .help = ""},
     // .{.name = "uninstall", .handler = , .help = ""},
 };
 
