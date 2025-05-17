@@ -300,8 +300,12 @@ static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
         if ( !lib->shared && !lib->statics ) // i.e. no specific binary was provided (can they still specify a specific include dir? or should I change how I write system?)
             fprintf(system, "  %s\n", lib->name);
 
-        if (lib->submodule != NULL)
-            fprintf(submod, "  %s\n", lib->submodule);
+        if (lib->submodule != NULL) {
+            if(lib->submodule[0] != '/')
+                fprintf(submod, "  ${PROJECT_DIR}/%s ${CMAKE_BINARY_DIR}/%s-build \n", lib->submodule, lib->name);
+            else
+                fprintf(submod, "  %s ${CMAKE_BINARY_DIR}/%s-build \n", lib->submodule, lib->submodule);
+        }
 
     }
 

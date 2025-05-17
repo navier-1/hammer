@@ -30,14 +30,15 @@ pub fn hClean(args: [][:0]u8) anyerror!void {
         return;
     }
 
-    const cmake_cache_path = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{build_dir, "CMakeCache.txt"});
+    const cmake_files_path = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{build_dir, "CMakeFiles"});
     
-    if (cwd.access(cmake_cache_path, .{})) |_| {
+    if (cwd.access(cmake_files_path, .{})) |_| {
         try cwd.deleteTree(build_dir); // might be a tad excessive for a clean
     } else |_| {
-        try std.io.getStdOut().writer().print("Failed to locate {s} - will not proceed with clean.\n", .{cmake_cache_path});
+        try std.io.getStdOut().writer().print("Failed to locate {s} - will not proceed with clean.\n", .{cmake_files_path});
     }
 
+    if (release_memory) allocator.free(cmake_files_path);
 }
 
 

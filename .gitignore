@@ -2,7 +2,6 @@ cli/.zig-cache
 cli/zig-out
 cli/utils/yaml/test_yaml_module
 
-backend/CMakeLists.txt
 backend/external
 backend/obfuscation/openssl
 
