@@ -29,8 +29,8 @@ pub fn build(b: *std.Build) void {
     exe.addCSourceFile(.{ .file = b.path("utils/yaml/toolchain.c"), .flags = &c_flags });
     exe.addCSourceFile(.{ .file = b.path("utils/yaml/dependencies.c"), .flags = &c_flags });
 
-    exe.linkSystemLibrary("cyaml");
     exe.linkSystemLibrary("yaml");
+    exe.addObjectFile(.{ .cwd_relative = "/usr/local/lib/libcyaml.a" });
 
     b.installArtifact(exe);
 }
