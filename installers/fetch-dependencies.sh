@@ -8,7 +8,7 @@ fi
 set -e
 
 apt update -y
-apt install libyaml-dev cmake -y
+apt install libyaml-dev cmake cmake-curses-gui cmake-qt-gui -y
 
 # Install CYaml
 git clone https://github.com/tlsa/libcyaml.git
