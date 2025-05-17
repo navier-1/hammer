@@ -4,29 +4,36 @@
 # - installs the back-end CMake scripts
 # - compiles the front-end CLI
 # - installs it
-#
+
 
 set -e
 
 # Will need to make this up to the user and still work with everything else
 HAMMER_INSTALL_DIR="/usr/local/lib/hammer"
-
+HAMMER_TMP_DIR="./hammer-tmp"
 
 if [ -e $HAMMER_INSTALL_DIR ]; then
     $HAMMER_INSTALL_DIR/installers/uninstall.sh
+    sudo cp -r $HAMMER_TMP_DIR/backend    $HAMMER_INSTALL_DIR
+    sudo cp -r $HAMMER_TMP_DIR/installers $HAMMER_INSTALL_DIR
+    HAMMER_CLI_DIR=$HAMMER_TMP_DIR/cli
+else
+    sudo cp -r ./backend    $HAMMER_INSTALL_DIR
+    sudo cp -r ./installers $HAMMER_INSTALL_DIR
+    HAMMER_CLI_DIR=./cli
 fi
-
-sudo cp -r ./backend     $HAMMER_INSTALL_DIR
-sudo cp -r ./installers  $HAMMER_INSTALL_DIR
 
 sudo bash -c "sed 's|@@HAMMER_INSTALL_DIR@@|$HAMMER_INSTALL_DIR|g' $HAMMER_INSTALL_DIR/CMakeLists.txt > $HAMMER_INSTALL_DIR/CMakeLists.txt.tmp"
 sudo rm $HAMMER_INSTALL_DIR/CMakeLists.txt
 sudo mv $HAMMER_INSTALL_DIR/CMakeLists.txt.tmp $HAMMER_INSTALL_DIR/CMakeLists.txt
 
 # Build and install CLI
-cd ./cli
+cd $HAMMER_CLI_DIR
 sudo zig build install --prefix /usr/local
-cd ..
+
+# Return to original dir + silence the print
+cd - > /dev/null
+sudo rm -rf $HAMMER_TMP_DIR
 
 echo "Done! Run 'hammer help' to get started."
 
