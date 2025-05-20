@@ -2,8 +2,12 @@
 // Licensed under the GPLv3 — see LICENSE file for details.
 
 const std = @import("std");
-const InstallDir = @import("configuration.zig").InstallDir;
+const config = @import("configuration.zig");
+const LinkedList = @import("utils/linked-list.zig").LinkedList;
 const mod_commands = @import("commands/commands.zig");
+
+const InstallDir = config.InstallDir;
+const release_memory = config.release_memory;
 
 const commands = mod_commands.commands;
 const printCommands = mod_commands.printCommands;
@@ -11,7 +15,7 @@ const printCommands = mod_commands.printCommands;
 const stdout = std.io.getStdOut().writer();
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-const allocator = gpa.allocator();
+var allocator = gpa.allocator();
 
 pub fn main() !void {
     const args = std.process.argsAlloc(allocator) catch {
@@ -24,6 +28,20 @@ pub fn main() !void {
         try printCommands();
         return;
     }
+
+    //var list = LinkedList([]u8).init(&allocator);
+    var list = try LinkedList([]u8).initFromSlice(&allocator, args);
+    try list.print();
+
+    const testina: []u8 = try allocator.dupe(u8, "muahahah");
+    
+    // TODO: insert() is actually behaving like a write()!
+    try list.insert(0, testina);
+
+    try list.remove(2);
+    try list.print();
+    
+    list.free();
 
     var cmd_found = false;
     for (commands) |cmd| {
@@ -38,4 +56,8 @@ pub fn main() !void {
         try stdout.print("No such command: {s}\n", .{args[1]});
         try printCommands();
     }
+
+    // if (release_memory) {
+    // deleteList()
+    // }
 }
