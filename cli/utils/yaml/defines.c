@@ -9,13 +9,30 @@
 #include <cyaml/cyaml.h>
 #include "transpile.h"
 
+struct define {
+    char* macro;
+    char* value; // Note: should this be done in a more type safe manner?
+};
 
 struct defines {
     char* target;
 
-    char** defs;
+    struct define** defs;
     unsigned defs_count;
 };
+
+
+static const cyaml_schema_field_t define_fields[] = {
+    CYAML_FIELD_STRING_PTR("macro", CYAML_FLAG_DEFAULT,                       struct define, macro, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_STRING_PTR("value", CYAML_FLAG_DEFAULT | CYAML_FLAG_OPTIONAL, struct define, value, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_END
+};
+
+
+static const cyaml_schema_value_t define_schema = {
+    CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, struct define, define_fields)
+};
+
 
 static const cyaml_schema_value_t string_schema = {
     CYAML_VALUE_STRING(CYAML_FLAG_POINTER, char*, 0, CYAML_UNLIMITED),
@@ -23,7 +40,8 @@ static const cyaml_schema_value_t string_schema = {
 
 static const cyaml_schema_field_t defines_fields[] = {
     CYAML_FIELD_STRING_PTR("target", CYAML_FLAG_DEFAULT, struct defines, target, 0, CYAML_UNLIMITED),
-    CYAML_FIELD_SEQUENCE("define",  CYAML_FLAG_POINTER, struct defines, defs, &string_schema, 0, CYAML_UNLIMITED),
+    //CYAML_FIELD_SEQUENCE("define",  CYAML_FLAG_POINTER, struct defines, defs, &string_schema, 0, CYAML_UNLIMITED),
+    CYAML_FIELD_SEQUENCE("define",   CYAML_FLAG_POINTER, struct defines, defs, &define_schema, 0, CYAML_UNLIMITED),
     CYAML_FIELD_END
 };
 
@@ -99,8 +117,15 @@ static int writeDefines(char* reserved_dir, struct defines* defines) {
 
     fprintf(defines_file, "target_compile_definitions(%s PRIVATE\n", target);
 
-    for (int i = 0; i < defines->defs_count; i++)
-        fprintf(defines_file, "  %s\n", defines->defs[i]);
+    for (int i = 0; i < defines->defs_count; i++) {
+        fprintf(defines_file, "  %s", defines->defs[i]->macro);
+
+        if(defines->defs[i]->value)
+            fprintf(defines_file, "=%s\n", defines->defs[i]->value);
+        else
+            fprintf(defines_file, "\n");
+ 
+    }
 
     fprintf(defines_file, ")\n\n");
 

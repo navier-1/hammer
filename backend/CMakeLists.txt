@@ -356,7 +356,7 @@ mark_as_advanced(CMAKE_CXX_COMPILER_TARGET)
 
 # =======================[ Add includes to target ]===========================
 
-target_include_directories(${TARGET} PRIVATE ${INCLUDE_DIRS})
+target_include_directories(${TARGET} PRIVATE ${${TARGET}_INCLUDE_DIRS})
 
 # if(USING_VCPKG)
 #    include(${VCPKG_DIR}/vcpkg_link_libs.cmake)
