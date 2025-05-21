@@ -29,19 +29,16 @@ pub fn main() !void {
         return;
     }
 
+    // Local testing
     //var list = LinkedList([]u8).init(&allocator);
-    var list = try LinkedList([]u8).initFromSlice(&allocator, args);
-    try list.print();
-
-    const testina: []u8 = try allocator.dupe(u8, "muahahah");
-    
+    //var list = try LinkedList([]u8).initFromSlice(&allocator, args);
+    //try list.print();
+    //const testina: []u8 = try allocator.dupe(u8, "muahahah");
     // TODO: insert() is actually behaving like a write()!
-    try list.insert(0, testina);
-
-    try list.remove(2);
-    try list.print();
-    
-    list.free();
+    //try list.insert(0, testina);
+    //try list.remove(2);
+    //try list.print();
+    //list.free();
 
     var cmd_found = false;
     for (commands) |cmd| {
