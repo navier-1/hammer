@@ -131,9 +131,8 @@ static char* targets[MAX_TARGETS];
 static FILE* handles[ NUM_DEPENDENCY_FILES * MAX_TARGETS ];
 
 static void closeTargetFiles() {
-    const char* end = ")\n\n";
     for (int i = 0; i < NUM_DEPENDENCY_FILES * elems_placed; i++) {
-        fprintf(handles[i], end);
+        fprintf(handles[i], ")\n\n");
         fclose(handles[i]);
 
         #ifdef MEM_FREE // Is this what causes the crash?
@@ -164,7 +163,7 @@ static FILE** getTargetFiles(char* reserved_dir, char* target) {
     const char* include_dirs_string_start = "target_include_directories(";
     const char* shared_libs_string_start  = "target_link_libraries(";
     const char* static_libs_string_start  = "target_link_libraries(";
-    const char* system_libs_string_start  = "set(SYSTEM_LIBS"; // TODO: come back to this
+    const char* system_libs_string_start  = "set(SYSTEM_LIBS "; // TODO: come back to this
 
     // 2. Open output files
     const char* _shared   = "_dependencies_shared.cmake";
@@ -281,17 +280,16 @@ static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
         }
 
         for (int j = 0; j < lib->requires_count; j++) {
-            if (memcmp(lib->requires[j]->type, "shared", 6) == 0)
-                fprintf(shared,  "  ${%s_BINARY}\n", lib->requires[j]->target);
-            else if (memcmp(lib->requires[j]->type, "static", 6) == 0)
-                fprintf(statics, "  ${%s_BINARY}\n", lib->requires[j]->target);
-            else {
+            if (memcmp(lib->requires[j]->type, "shared", 6) == 0){
+                fprintf(shared,  "  %s\n", lib->requires[j]->target);
+            } else if (memcmp(lib->requires[j]->type, "static", 6) == 0) {
+                fprintf(statics,  "  %s\n", lib->requires[j]->target);
+            } else {
                 printf("[writeDependencies] Fatal error: build target '%s' was said to depend on a of unknown type: '%s'\nDepends target may only be set to: shared, static.",
                     lib->target,
                     lib->requires[j]->type);
                 return 3;
             }
-
         }
 
         if (lib->include != NULL) {
@@ -301,16 +299,28 @@ static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
                 fprintf(includes, "  %s\n", lib->include);
         }
 
-        if ( !lib->shared && !lib->statics ) // i.e. no specific binary was provided (can they still specify a specific include dir? or should I change how I write system?)
+        if (lib->submodule != NULL) {
+            are_submodules_present = 1; // TODO: use something cleaner, maybe ignore the include on the CMake side if the submodules list is empty
+            if(lib->submodule[0] != '/') {
+                fprintf(submod, "  ${PROJECT_DIR}/%s ${PROJECT_DIR}/%s-build \n", lib->submodule, lib->name);
+            } else {
+                fprintf(submod, "  %s ${PROJECT_DIR}/%s-build \n", lib->submodule, lib->submodule);
+            }
+
+            // TODO: This was here to test if this adds gtest as link target, though it's not the cleanest way to do so.
+            fprintf(shared, "  %s \n",     lib->name);
+            fprintf(shared, "  %s_main\n", lib->name);
+            // TODO: should implement a simple and clean way to pass targets as dependencies from dependencies.yml.
+            // Something along the lines of:
+            // target_depends:
+            //   - gtest
+            //   - gtest_main
+            //   - main_target
+        }
+
+        if ( !lib->include && !lib->shared && !lib->statics && !lib->submodule && !lib->requires ) // i.e. only passed a name
             fprintf(system, "  %s\n", lib->name);
 
-        if (lib->submodule != NULL) {
-            are_submodules_present = 1;
-            if(lib->submodule[0] != '/')
-                fprintf(submod, "  ${PROJECT_DIR}/%s ${CMAKE_BINARY_DIR}/%s-build \n", lib->submodule, lib->name);
-            else
-                fprintf(submod, "  %s ${CMAKE_BINARY_DIR}/%s-build \n", lib->submodule, lib->submodule);
-        }
 
     }
 

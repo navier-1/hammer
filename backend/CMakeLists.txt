@@ -1,3 +1,4 @@
+
 cmake_minimum_required(VERSION 3.25)
 
 # TODO: consider making this configurable from yaml
@@ -155,7 +156,7 @@ else()
     message(FATAL_ERROR "Unknown artifact type: ${${TARGET}_ARTIFACT_TYPE}")
 endif()
 
-# This ${TARGET}_BINARY can be used to link one target against another.
+# Might come in handy sooner or later
 set(${TARGET}_BINARY "${CMAKE_CURRENT_BINARY_DIR}/bin/${${TARGET}_PREFIX}${TARGET}${${TARGET}_SUFFIX}")
 
 set_target_properties(${TARGET} PROPERTIES C_STANDARD ${C_STANDARD} CXX_STANDARD ${CXX_STANDARD}) # TODO: remove hardcoding
@@ -318,10 +319,10 @@ set_target_properties(${TARGET} PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin
 )
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-set(ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+# set(ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
 
 # =======================[ Check compilation profile ]===========================
@@ -499,9 +500,5 @@ if(USE_CODEQL)
 endif()
 
                                         endforeach() # ends the foreach(TARGET) loop
-
                                         
                                         
-# TRIAL
-# TODO: link the submodule targets! But how do I know their names ex-ante?
-target_link_libraries(testexe PRIVATE gtest)
