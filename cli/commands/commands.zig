@@ -33,13 +33,13 @@ pub const commands = [_]Command{
     .{ .name = "config",     .handler = &hConfig,     .help = "Configure project (graphical CMake)",        .category = "project"}, 
     .{ .name = "autoconfig", .handler = &hAutoConfig, .help = "Configure from file (no user interaction)",  .category = "project"},
     .{ .name = "build",      .handler = &hBuild,      .help = "Build project after having configured it",   .category = "project"},
-    .{ .name = "autobuild",  .handler = &hAutoBuild,  .help = "Configure + build project from config",      .category = "project"},
+    //.{ .name = "autobuild",  .handler = &hAutoBuild,  .help = "Configure + build project from config",      .category = "project"},
     .{ .name = "clean",      .handler = &hClean,      .help = "Cleans the build directory of its contents", .category = "project"},
 
     // General (consider making the macro-area a further field of the Command type)
     .{ .name = "help",    .handler = &hHelp,    .help = "Prints detailed guide to commands", .category = "utilities"},
     .{ .name = "update",  .handler = &hUpdate,  .help = "Update tool from remote repo",      .category = "utilities"},
-    .{ .name = "install", .handler = &hInstall, .help = "Install developer tools",           .category = "utilities"},
+    //.{ .name = "install", .handler = &hInstall, .help = "Install developer tools",           .category = "utilities"},
 
     // .{.name = "docs", .handler = , .help = ""},
     // .{.name = "uninstall", .handler = , .help = ""},

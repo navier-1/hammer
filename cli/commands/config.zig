@@ -11,6 +11,7 @@ const search = @import("../utils/search-filesystem.zig");
 const getFlag = parsing.getFlag;
 const revSearch = search.revSearch;
 const getFlagValue = parsing.getFlagValue;
+const stdout = std.io.getStdOut().writer();
 const release_memory = configuration.release_memory;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -62,7 +63,7 @@ fn config(args: [][:0]u8) anyerror!ConfigParams {
         const target: [:0]const u8 = ".configure"; // TODO: read the configuration dir from (heh) configuration, or set in build script.
         project_dir = revSearch(allocator, target) catch |err| switch (err) {
             error.NotFound => {
-                try std.io.getStdOut().writer().print("Failed to locate configuration directory '{s}'.\nTry going to the top level and run:\nhammer init\n.", .{target});
+                try stdout.print("Failed to locate configuration directory '{s}'.\nTry going to the top level and run:\nhammer init\n.", .{target});
                 std.process.exit(0);
             },
             else => return err,
@@ -73,7 +74,10 @@ fn config(args: [][:0]u8) anyerror!ConfigParams {
         const reserved_dir_path = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, ".configure/.reserved"});
 
         if (cwd.access(reserved_dir_path, .{})) |_| {
-            try cwd.deleteTree(reserved_dir_path);
+            cwd.deleteTree(reserved_dir_path) catch {
+                try stdout.print("Failed to delete: {s}\n\n", .{reserved_dir_path});
+                return error.AccessDenied;
+            };
         } else |err| switch (err) {
             error.FileNotFound => {},
             else => return err,
