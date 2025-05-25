@@ -158,8 +158,8 @@ endif()
 
 # Might come in handy sooner or later
 set(${TARGET}_BINARY "${CMAKE_CURRENT_BINARY_DIR}/bin/${${TARGET}_PREFIX}${TARGET}${${TARGET}_SUFFIX}")
-
-set_target_properties(${TARGET} PROPERTIES C_STANDARD ${C_STANDARD} CXX_STANDARD ${CXX_STANDARD}) # TODO: remove hardcoding
+include("${CONFIG_DIR}/${TARGET}_language_standards.cmake")
+#set_target_properties(${TARGET} PROPERTIES C_STANDARD ${C_STANDARD} CXX_STANDARD ${CXX_STANDARD}) # TODO: remove hardcoding
 
 
 # =======================[ Load target dependencies ]===========================

@@ -1,0 +1,8 @@
+set(CMAKE_BUILD_TYPE "Debug" CACHE INTERNAL "Should be changed via the profile files!" FORCE)
+
+set(CMAKE_C_FLAGS   "-O0 -Wall -Wextra -Wunused-result -Wpedantic -Wshadow -Wnull-dereference -Wswitch -gdwarf-4")
+set(CMAKE_CXX_FLAGS "-O0 -Wall -Wextra -Wunused-result -Wpedantic -Wshadow -Wnull-dereference -Wswitch -Wnon-virtual-dtor -gdwarf-4")
+
+# In release:
+# -Wold-style-cast
+# -Wextra-semi
