@@ -59,9 +59,9 @@ control over the project than they would have had with some other tool.
 The user interacts with a front-end CLI that takes heavy inspiration from Rust's Cargo.
 It provides a few quick commands to organize a project:
 
-   $ hammer config
-   $ hammer build
-   $ hammer docs
+    $ hammer config
+    $ hammer build
+    $ hammer docs
     
 ## Installation
 Currently, Linux only.

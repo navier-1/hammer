@@ -28,10 +28,10 @@ pub fn hInit(args: [][:0]u8) anyerror!void {
         needs_cleanup = true;
     }
 
-    try target_dir.makePath(".configure");
-    try target_dir.makePath(".configure/.reserved"); // The cmake files that are derived from the yaml configuration are placed here
+    try target_dir.makePath(configuration.configuration_dir);
+    try target_dir.makePath(configuration.reserved_dir);
 
-    var init_dir = try target_dir.openDir(".configure", .{});
+    var init_dir = try target_dir.openDir(configuration.configuration_dir, .{});
     defer init_dir.close();
 
     const cwd = std.fs.cwd();

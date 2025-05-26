@@ -4,41 +4,8 @@
 const std = @import("std");
 const stdout = std.io.getStdOut().writer();
 
-
-const WalkError = error{
-    OutOfBounds,
-    InvalidNode,
-};
-
-const AllocError = error{
-    OutOfMemory,
-};
-
-
-const PrintError = error{
-    AccessDenied,
-    BrokenPipe,
-    ConnectionResetByPeer,
-    DeviceBusy,
-    DiskQuota,
-    FileTooBig,
-    InputOutput,
-    InvalidArgument,
-    LockViolation,
-    MessageTooBig,
-    NoDevice,
-    NoSpaceLeft,
-    NotOpenForWriting,
-    OperationAborted,
-    PermissionDenied,
-    ProcessNotFound,
-    SystemResources,
-    Unexpected,
-    WouldBlock,
-};
-
-const ListError = AllocError || WalkError || PrintError;
-
+// Error sets defined further down
+pub const ListError = AllocError || WalkError || PrintError;
 
 pub fn Node(comptime T: type) type {
     return struct {
@@ -48,12 +15,10 @@ pub fn Node(comptime T: type) type {
     };
 }
 
-
-
-/// Doubly linked list implementation with array-like access
+/// Doubly linked list implementation with array-like access to elements
+/// Provides methods to go from slice to list and vice versa.
 pub fn LinkedList(comptime T: type) type {
     return struct {
-
         const Self = @This();
 
         // Instance fields: only name and type
@@ -62,6 +27,7 @@ pub fn LinkedList(comptime T: type) type {
         tail: ?*Node(T),
         allocator: *std.mem.Allocator,
 
+        /// Provides a LinkedList instance, ready to be populated.
         pub fn init(_allocator: *std.mem.Allocator) Self {
             return Self{
                 .len = 0,
@@ -72,35 +38,32 @@ pub fn LinkedList(comptime T: type) type {
         }
 
         /// Takes some slice and allocates the new linked list from the slice
-        pub fn initFromSlice(_allocator: *std.mem.Allocator, slice: []T) !Self {
-            var _self = Self{
-                .len = 0,
-                .head = null,
-                .tail = null,
-                .allocator = _allocator,
-            };
+        pub fn initFromSlice(_allocator: *std.mem.Allocator, slice: []const T) !Self {
+            var self = init(_allocator);
+            if (slice.len == 0) return self;
 
             // Sets head
-            try _self.prepend(slice[0]);
+            try self.prepend(slice[0]);
 
             for (1..slice.len) |i| {
-                try _self.append(slice[i]);
+                try self.append(slice[i]);
             }
 
-            _self.len = slice.len;
-            return _self;
+            return self;
         }
 
-        /// Returns an equivalent slice the current statie of the list
+        /// Returns an equivalent slice from the current state of the list; the slice is allocated using the 
+        /// provided allocator, so freeing it is up to the caller.
         pub fn toSlice(self: *Self, _allocator: *std.mem.Allocator) ListError![]T {
-            
-            var slice = _allocator.alloc(T, self.len) catch return error.OutOfMemory;
+            var slice: []T = _allocator.alloc(T, self.len) catch return error.OutOfMemory;
+            // slice.len = self.len; // no, it's read only
 
             var node = self.head;
             var i: usize = 0;
 
-            while (node != null) : (node = node.?.next) {
-                slice[i] = node.?.value;
+            while (node) |n| {
+                slice[i] = n.value;
+                node = n.next;
                 i += 1;
             }
 
@@ -114,12 +77,11 @@ pub fn LinkedList(comptime T: type) type {
         }
 
         /// Accesses the i-th element of the list, or returns out of bounds if it doesn't exist
-        /// TODO: see if this can be inlined
         /// TODO: can be slightly optimized to be a forward walk if index < self.len / 2, a backwards walk if index > self.len / 2
         /// TODO: Could possibly also optionally take a node address to start from and start walking from there.
-        fn walk(self: *Self, index: usize) ListError! ?*Node(T) {
+        inline fn walk(self: *Self, index: usize) (WalkError||PrintError)!?*Node(T) {
             if (index >= self.len) {
-                try stdout.print("[LinkedList] tried to access index {d} in a list of length {d}\n", .{index, self.len});
+                try stdout.print("[LinkedList] tried to access index {d} in a list of length {d}\n", .{ index, self.len });
                 return error.OutOfBounds;
             }
 
@@ -128,12 +90,47 @@ pub fn LinkedList(comptime T: type) type {
                 if (current) |curr| {
                     current = curr.next;
                 } else {
-                    try stdout.print("[LinkedList] the len attribute is set to {d}, but the element at index {d} is set to null.\n", .{index, i});
+                    try stdout.print("[LinkedList] the len attribute is set to {d}, but the element at index {d} is set to null.\n", .{ index, i });
                     return error.InvalidNode;
                 }
             }
 
             return current;
+        }
+
+        /// Checks if a given value is present in the list, and if so sets the index where said value is first encountered.
+        pub fn where(self: *Self, value: T, out_index: *usize, out_address: **Node(T) ) bool {
+
+            var current = self.head;
+            for (0..self.len) |i| {
+                if (std.mem.eql(u8, current.?.value, value)) {
+                    out_index.* = i;
+                    out_address.* = current.? ;
+                    return true;
+                }
+                current = current.?.next;
+            }
+
+            return false;
+        }
+
+        /// Simply returns if the value was encountered or not.
+        pub fn contains(self: *Self, value: T) bool {
+            var dummy_idx: usize = undefined;
+            var dummy_addr: *Node(T) = undefined;
+            return self.where(value, &dummy_idx, &dummy_addr);
+        }
+
+        /// You give it a value; it returns the next if found, null otherwise.
+        pub fn getNextValue(self: *Self, value: T) ?T {
+            var dummy: usize = undefined;
+            var address: *Node(T) = undefined;
+            
+            const found = self.where(value, &dummy, &address);
+
+            if (!found) return null;
+            if (address.next == null) return null;
+            return address.next.?.value;
         }
 
         /// Reads the i-th element of the list
@@ -143,23 +140,19 @@ pub fn LinkedList(comptime T: type) type {
         }
 
         /// Sets the value of the i-th element of the list
-        pub fn write(self: *Self, index: usize, comptime value: T) ListError!void {
-            const current = try self.walk(index);
-            if (current) |node| {
-                node.value = value;
-            }
-            // TODO: else case?
-            return;
+        pub fn write(self: *Self, index: usize, value: T) ListError!void {
+            const node = try self.walk(index);
+            node.?.value = value;
         }
 
         /// Formatted print of all elements in the list
         pub fn print(self: *Self) PrintError!void {
             const format_str = comptime switch (T) {
-                [:0]u8, []u8, [:0]const u8, []const u8 => "{s}  ", // strings or slices
-                u8, u16, u32, u64, usize => "{d}  ", // unsigned ints
-                i8, i16, i32, i64, isize => "{d}  ", // signed ints
-                f32, f64 => "{f}",                 // floats
-                bool => "{}",                      // default formatting for bool is fine
+                [:0]u8, []u8, [:0]const u8, []const u8 => "{s}  ",
+                u8, u16, u32, u64, usize => "{d}  ",
+                i8, i16, i32, i64, isize => "{d}  ",
+                f32, f64 => "{f}",
+                bool => "{}",
                 else => @compileError("Unsupported type for formatting"),
             };
 
@@ -179,40 +172,45 @@ pub fn LinkedList(comptime T: type) type {
             try stdout.print("\n", .{});
         }
 
+        /// Unlinks the node without performing the walk along the chain.
+        pub fn removeFromPtr(self: *Self, node: *Node(T)) void {
+            if (node.next) |next| {
+                next.prev = node.prev;
+            }
+
+            if (node.prev) |prev| {
+                prev.next = node.next;
+            }
+
+            if (self.head == node) {
+                self.head = node.next;
+            } else if (self.tail == node) {
+                self.tail = node.prev;
+            }
+
+            self.len -= 1;
+
+            // TODO: optionally, free memory.
+        }
+
         /// Remove the i-th element from the list
-        /// TODO: also provide the version that can directly take the pointer to the element, so that the needless walk is avoided
         pub fn remove(self: *Self, index: usize) WalkError!void {
             const node = try self.walk(index);
             const elem = node orelse return WalkError.InvalidNode; // Makes it a valid node, not an optional
-
-            // optionals
-            const next_node = elem.next;
-            const prev_node = elem.prev;
-
-            if (next_node) |next| next.prev = prev_node;
-            if (prev_node) |prev| prev.next = next_node;
-
-            if (index == 0)             self.head = next_node;
-            if (index == self.len - 1)   self.tail = prev_node;
-
-            // TODO: check that this does set the head and tail to point to null in the appropriate direction.
-
-            self.len -= 1;
-            // TODO: optionally, free the element.
+            self.removeFromPtr(elem);
         }
 
         /// Inserts an element at a certain index in the middle of the chain, and shifts the old resident at that index down by one position towards the tail.
         /// It cannot append to head or tail, i.e. valid indices are between 1 and len - 2.
         /// Use append() and prepend() to add a new element to the tail or head.
         pub fn insert(self: *Self, index: usize, value: T) ListError!void {
-
             if (index <= 0 or self.len < 2 or index >= self.len) {
                 try stdout.print(
                     \\[LinkedList] Attempted to insert a new element at index {d} for a list with length {d};
                     \\Insertion is only available for middle nodes (1 to len-2)
                     \\Consider using append() and prepend() methods to alter tail or head of the list.
                     \\
-                    ,.{index, self.len});
+                , .{ index, self.len });
                 return error.OutOfBounds;
             }
 
@@ -225,12 +223,6 @@ pub fn LinkedList(comptime T: type) type {
 
             // Holds the node currently in the index we want to write
             const old_node = try self.walk(index);
-            if (index == 0) {
-                self.head     = new_node;
-            } else if (index == self.len - 1) {
-                self.tail     = new_node;
-            }
-
 
             // Re-link
             const old = old_node orelse unreachable;
@@ -279,7 +271,7 @@ pub fn LinkedList(comptime T: type) type {
                 old_head.prev = new_head;
                 new_head.next = old_head;
             } else {
-                new_head.next  = self.tail;
+                new_head.next = self.tail;
                 if (self.tail) |tail| tail.prev = new_head;
             }
 
@@ -299,8 +291,114 @@ pub fn LinkedList(comptime T: type) type {
             self.head = null;
             self.tail = null;
             self.len = 0;
-
-            //self.allocator.free(self);
         }
     };
 }
+
+// Error sets used by the LinkedList class
+const WalkError = error{
+    OutOfBounds,
+    InvalidNode,
+};
+
+const AllocError = error{
+    OutOfMemory,
+};
+
+const PrintError = error{
+    AccessDenied,
+    BrokenPipe,
+    ConnectionResetByPeer,
+    DeviceBusy,
+    DiskQuota,
+    FileTooBig,
+    InputOutput,
+    InvalidArgument,
+    LockViolation,
+    MessageTooBig,
+    NoDevice,
+    NoSpaceLeft,
+    NotOpenForWriting,
+    OperationAborted,
+    PermissionDenied,
+    ProcessNotFound,
+    SystemResources,
+    Unexpected,
+    WouldBlock,
+};
+
+// ====================[ Tests ]=======================
+
+test "Conversion Slice <-> Linked list" {
+    var allocator = std.testing.allocator;
+
+    const strings = [_][:0]const u8{ "hello", "world", "whats", "up", "?" };
+
+    var list = try LinkedList([:0]const u8).initFromSlice(&allocator, &strings);
+    defer list.free();
+
+    const recovered_slice = try list.toSlice(&allocator);
+    defer allocator.free(recovered_slice);
+
+    try std.testing.expect(strings.len == recovered_slice.len);
+
+    for (0..recovered_slice.len) |i| {
+        try std.testing.expect(std.mem.eql(u8, strings[i], recovered_slice[i]));
+    }
+}
+
+test "Check insertion" {
+    var allocator = std.testing.allocator;
+
+    var list = LinkedList([:0]const u8).init(&allocator);
+    defer list.free();
+
+    try list.prepend("Hello");
+    try list.append("world");
+
+    const addendum: [:0]const u8 = try allocator.dupeZ(u8, "beautiful");
+    defer allocator.free(addendum);
+
+    try list.insert(1, addendum);
+
+    try std.testing.expect(list.len == 3);
+    try std.testing.expect(std.mem.eql(u8, list.head.?.value, "Hello"));
+    try std.testing.expect(std.mem.eql(u8, list.tail.?.value, "world"));
+}
+
+test "Print a list" {
+    var allocator = std.testing.allocator;
+
+    var list = LinkedList([:0]const u8).init(&allocator);
+    defer list.free();
+
+    try list.prepend("If");
+    try list.append("you");
+    try list.append("can");
+    try list.append("read");
+    try list.append("this");
+    try list.append("the");
+    try list.append("test");
+    try list.append("worked");
+
+    try list.print();
+}
+
+test "Finding values" {
+    var allocator = std.testing.allocator;
+
+    var list = LinkedList([:0]const u8).init(&allocator);
+    defer list.free();
+
+    try list.prepend("Hello");
+    try list.append("world!");
+
+    try std.testing.expect(list.contains("Hello"));
+    try std.testing.expect(!list.contains("( ͡° ͜ʖ ͡°)"));
+
+    var index: usize = undefined;
+    try std.testing.expect(list.where("world!", &index));
+
+    try std.testing.expect(index == 1);
+}
+

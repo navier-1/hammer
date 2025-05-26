@@ -17,8 +17,14 @@ pub const config_files = [_][]const u8{
 // TODO: figure out how to do this from the build system
 pub const release_memory: bool = false;
 
-// --- Graphical configuration ---
-pub const gui_program = "ccmake"; // cmake-gui, other...
+// --- Configuration ---
+pub const backend = "cmake";
+pub const poor_mans_pwd = ".";
+pub const gui_program = "ccmake";       // either ccmake or cmake-gui
+pub const default_build_dir = "build";
+pub const default_build_system = "Ninja";
+pub const configuration_dir = ".configure";
+pub const reserved_dir = configuration_dir ++ "/.reserved";
 
 // --- Remote update variables ---
 

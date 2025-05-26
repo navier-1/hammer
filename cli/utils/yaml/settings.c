@@ -126,21 +126,40 @@ static void loadSettings(char* settings_file, struct top_level** _root) { // str
 static int writeSettings(char* reserved_dir, struct artifact* artifact) {
 
     const char* name = artifact->target; // not name - the name is simply given to the final output binary.
-    const char* ext = "_settings.cmake"; 
+    const char* settings_ext  = "_settings.cmake";
+    const char* standards_ext = "_language_standards.cmake"; 
 
-    size_t len_filename = strlen(reserved_dir) + strlen(name) + strlen(ext) + 1;
-    char* filename = malloc(len_filename + 1);
-    if (!filename) {
-        printf("[writeSettings] Failed to allocate %llu bytes for %s's defines file name.\n", len_filename, name);
+    // Construct and open the target settings file
+    size_t len_settings_filename = strlen(reserved_dir) + strlen(name) + strlen(settings_ext) + 1;
+    char* settings_filename = malloc(len_settings_filename + 1);
+    if (!settings_filename) {
+        printf("[writeSettings] Failed to allocate %llu bytes for %s's settings file name.\n", len_settings_filename, name);
         return 1;
     }
 
-    snprintf(filename, len_filename + 1, "%s/%s%s", reserved_dir, name, ext);
+    snprintf(settings_filename, len_settings_filename + 1, "%s/%s%s", reserved_dir, name, settings_ext);
 
-    FILE* settings_file = fopen(filename, "w");
+    FILE* settings_file = fopen(settings_filename, "w");
     if (!settings_file) {
-        printf("[writeSettings] Failed to open: %s\n", filename);
+        printf("[writeSettings] Failed to open: %s\n", settings_filename);
         return 2;
+    }
+
+    //----------
+    // Same procedure for the standards file name
+    size_t len_standards_filename = strlen(reserved_dir) + strlen(name) + strlen(standards_ext) + 1;
+    char* standards_filename = malloc(len_standards_filename + 1);
+    if (!standards_filename) {
+        printf("[writeSettings] Failed to allocate %llu bytes for %s's language standards file name.\n", len_standards_filename, name);
+        return 3;
+    }
+
+    snprintf(standards_filename, len_standards_filename + 1, "%s/%s%s", reserved_dir, name, standards_ext);
+
+    FILE* standards_file = fopen(standards_filename, "w");
+    if (!standards_file) {
+        printf("[writeSettings] Failed to open: %s\n", standards_filename);
+        return 4;
     }
 
     // Compile the .cmake file with the target settings
@@ -172,9 +191,11 @@ static int writeSettings(char* reserved_dir, struct artifact* artifact) {
     // standards
     for (unsigned i = 0; i < artifact->languages_count; i++) {
         if (strcmp(artifact->languages[i]->lang, "c") == 0)
-            fprintf(settings_file, "set(C_STANDARD %s CACHE STRING \"C standard in use\" )\n", artifact->languages[i]->std );
+            fprintf(standards_file, "set_target_properties(%s PROPERTIES\n  C_STANDARD %s\n  C_STANDARD_REQUIRED YES\n  C_EXTENSIONS NO\n)\n\n ", name, artifact->languages[i]->std);
+            //fprintf(settings_file, "set(C_STANDARD %s CACHE STRING \"C standard in use\" )\n", artifact->languages[i]->std );
         else if (strcmp(artifact->languages[i]->lang, "c++") == 0)
-            fprintf(settings_file, "set(CXX_STANDARD %s CACHE STRING \"C++ standard in use\" )\n", artifact->languages[i]->std);
+            fprintf(standards_file, "set_target_properties(%s PROPERTIES\n  CXX_STANDARD %s\n  CXX_STANDARD_REQUIRED YES\n  CXX_EXTENSIONS NO\n)\n\n ", name, artifact->languages[i]->std);
+            //fprintf(settings_file, "set(CXX_STANDARD %s CACHE STRING \"C++ standard in use\" )\n", artifact->languages[i]->std);
 
         // TODO: if more languages are added, e.g. Fortran, specify here syntax to specify standard
     }
@@ -196,15 +217,20 @@ static int writeSettings(char* reserved_dir, struct artifact* artifact) {
     fprintf(settings_file, "\n\n");
 
     // IMPORTANT:
-    // the build system is not actually written to the file; it is returned to the Zig CLI so that it may call CMake with that specific build system later.
+    // the build system should not actually be written to the file; it should be returned to the Zig CLI so that it may call CMake with that specific build system later.
     // TODO: make this happen, actually return that string to the Zig module.
 
 
     // TODO: in another configuration file for hammer, specify TOOLCHAIN_DIR (${HAMMER_DIR}/toolchains/), perform globbing and do that thing so that 
     // only valid toolchain files are displayed
 
-    free(filename);
+    #ifdef MEM_FREE
+    free(settings_filename);
+    free(standards_filename);
+    #endif
+
     fclose(settings_file);
+    fclose(standards_file);
     return 0;
 }
 

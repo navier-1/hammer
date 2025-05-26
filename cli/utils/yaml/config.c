@@ -12,7 +12,7 @@ const cyaml_config_t config = {
     .flags = CYAML_CFG_DEFAULT | CYAML_CFG_CASE_INSENSITIVE,
 };
 
-
+// TODO: figure out how to pass .configure/ from configuration.zig
 const char* defaults[NUM_FILES] = {".configure", "dependencies.yml", "sources.yml", "defines.yml", "settings.yml"};
 const char* flags[NUM_FILES]    = {"--config",   "--dependencies",   "--sources",   "--defines",   "--settings"};
 

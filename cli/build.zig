@@ -4,10 +4,12 @@
 const std = @import("std");
 
 pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+
     const exe = b.addExecutable(.{
         .name = "hammer",
         .root_source_file = b.path("main.zig"),
-        .target = b.standardTargetOptions(.{}),
+        .target = target,
         //.optimize = b.standardReleaseOptions(),
     });
 
@@ -33,4 +35,14 @@ pub fn build(b: *std.Build) void {
     exe.addObjectFile(.{ .cwd_relative = "/usr/local/lib/libcyaml.a" });
 
     b.installArtifact(exe);
+
+    // Testing
+
+    const run_tests = b.addTest(.{
+        .root_source_file = b.path("main.zig"),
+        .target = target,
+    });
+
+    const test_step = b.step("test", "Run unit tests");
+    test_step.dependOn(&run_tests.step);
 }

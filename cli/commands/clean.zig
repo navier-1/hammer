@@ -4,7 +4,7 @@
 
 const std = @import("std");
 const search = @import("../utils/search-filesystem.zig");
-const release_memory = @import("../configuration.zig").release_memory;
+const configuration = @import("../configuration.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
@@ -18,10 +18,10 @@ pub fn hClean(args: [][:0]u8) anyerror!void {
         if (args[0][0] != '-') // should be a valid name
             build_dir = args[0];
     } else {        
-        const target: [:0]const u8 = ".configure"; // TODO: read the configuration dir from (heh) configuration, or set in build script.
+        const target: [:0]const u8 = configuration.configuration_dir;
         const project_dir = try search.revSearch(allocator, target);
-        build_dir = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, "build"});
-        if (release_memory) allocator.free(project_dir);
+        build_dir = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, configuration.default_build_dir});
+        if (configuration.release_memory) allocator.free(project_dir);
     }
 
     // Run a couple of checks to ensure you are indeed deleting a valid CMake build directory
@@ -42,7 +42,7 @@ pub fn hClean(args: [][:0]u8) anyerror!void {
         try std.io.getStdOut().writer().print("Failed to locate {s} - will not proceed with clean.\n", .{cmake_files_path});
     }
 
-    if (release_memory) allocator.free(cmake_files_path);
+    if (configuration.release_memory) allocator.free(cmake_files_path);
 }
 
 
