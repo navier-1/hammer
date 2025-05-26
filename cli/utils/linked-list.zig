@@ -156,6 +156,7 @@ pub fn LinkedList(comptime T: type) type {
                 else => @compileError("Unsupported type for formatting"),
             };
 
+            try stdout.print("====[Printing LinkedList(  " ++ format_str ++ ")]====\n", .{@typeName(T)});
             try stdout.print("List length: {}\n", .{self.len});
 
             var current = self.head;

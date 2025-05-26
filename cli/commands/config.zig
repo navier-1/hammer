@@ -8,9 +8,16 @@ const transpile = @import("../utils/transpile.zig");
 const configuration = @import("../configuration.zig");
 const search = @import("../utils/search-filesystem.zig");
 
+const list_module = @import("../utils/linked-list.zig");
+const Node = list_module.Node;
+const ListError = list_module.ListError;
+const LinkedList = list_module.LinkedList;
+
+// TODO: remove these once linked list is integrated in this module.
 const getFlag = parsing.getFlag;
-const revSearch = search.revSearch;
 const getFlagValue = parsing.getFlagValue;
+
+const revSearch = search.revSearch;
 const stdout = std.io.getStdOut().writer();
 const release_memory = configuration.release_memory;
 
@@ -22,45 +29,48 @@ const ConfigParams = struct {
     build_system: [:0]const u8,
     cml_dir: [:0]const u8,
     project_dir: [:0]const u8,
-    //config_program: [:0]const u8, // Would probably be better placed in configuration.zig
 };
 
-fn config(args: [][:0]u8) anyerror!ConfigParams {
-    const cwd = std.fs.cwd();
-
+/// Encapsulates the configuration logic which is shared between the config and autoconfig commands.
+/// Takes a linked list to the commands, consumes some and adds some of its own.
+fn config(args: *LinkedList([:0]const u8)) anyerror!ConfigParams {
+    
     // Setup default configuration vars
-    var build_dir: [:0]const u8 = "./build";
-    var build_system: [:0]const u8 = "Ninja";
-    var cml_dir: [:0]const u8 = configuration.InstallDir;
-
-    // CMakeLists.txt may or may not exist in the project dir - check
-    // TODO: Perform a revParse on this, too? So even traditional projects can be built from within the repository.
-    // var cml: ?std.fs.File = null;
-    // cml = cwd.openFile("CMakeLists.txt", .{}) catch |err| switch (err) {
-    //     error.FileNotFound => null,
-    //     else => return err,
-    // };
+    var cml_dir: [:0]const u8 = configuration.poor_mans_pwd;                // ditto
+    var build_dir: [:0]const u8 = configuration.default_build_dir;          // TODO: why is undefined causing crashes?
+    var build_system: [:0]const u8 = configuration.default_build_system;    // ditto
 
     var project_dir: [:0]const u8 = undefined;
-    var is_cmakelists_present: bool = undefined;
+    var is_cmakelists_present: bool = undefined; // TODO: think of something cleaner than this flag
 
-    // TODO: probably can omit the cml variable entirely, and place the openDir() call here.
+    // Could consider a revParse() on this too, but for a legacy build it might be safer to keep it from the cwd only.
+    const cwd = std.fs.cwd();
     if (cwd.access("CMakeLists.txt", .{})) |_| {
-        is_cmakelists_present = true;
+
+        // Check if the default CMakeLists should be ignored
+        var idx: usize = undefined;
+        var addr: *Node([:0]const u8) = undefined;
+        const override_flag: [:0]const u8 = "--override";
+
+        if (args.where(override_flag, &idx, &addr)) {
+            args.removeFromPtr(addr);
+            is_cmakelists_present = false;
+        } else {
+            is_cmakelists_present = true;
+        }
+
     } else |_| {
         is_cmakelists_present = false;
     }
 
-
-    if (is_cmakelists_present and !getFlag(args, "--override")) { // TODO: the parsing functions should remove consumed args from the args list, or they will be passed to cmake.
-        
-        cml_dir = ".";
-        project_dir = try allocator.dupeZ(u8, cml_dir);
-
+    // Asssign configuration params based on existing CML.txt or on a .configure/ directory
+    if (is_cmakelists_present) {        
+        project_dir = configuration.poor_mans_pwd; //try allocator.dupeZ(u8, cml_dir);
+        build_dir    = args.getNextValue("-B") orelse configuration.default_build_dir;    
     } else { // The configuration is fully up to Hammer
-        
+
         // Reverse search from pwd for the configuration directory
-        const target: [:0]const u8 = ".configure"; // TODO: read the configuration dir from (heh) configuration, or set in build script.
+        const target: [:0]const u8 = configuration.configuration_dir;
         project_dir = revSearch(allocator, target) catch |err| switch (err) {
             error.NotFound => {
                 try stdout.print("Failed to locate configuration directory '{s}'.\nTry going to the top level and run:\nhammer init\n.", .{target});
@@ -68,10 +78,10 @@ fn config(args: [][:0]u8) anyerror!ConfigParams {
             },
             else => return err,
         };
-        // This dynamically allocated string will (may) be released at the very end.
+
 
         // --- Create compilation dir ---
-        const reserved_dir_path = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, ".configure/.reserved"});
+        const reserved_dir_path = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, configuration.reserved_dir});
 
         if (cwd.access(reserved_dir_path, .{})) |_| {
             cwd.deleteTree(reserved_dir_path) catch {
@@ -88,63 +98,67 @@ fn config(args: [][:0]u8) anyerror!ConfigParams {
         // Add the located dir to the args for the C module
         const transpile_args_len = 2 + args.len;
         var transpile_args = try allocator.alloc([:0]u8, transpile_args_len);
-        defer allocator.free(transpile_args);
 
         transpile_args[0] = try allocator.dupeZ(u8, "--config");
-        transpile_args[1] = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, ".configure"});
+        transpile_args[1] = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, configuration.configuration_dir});
 
-        for (args, 0..args.len) |arg, i| {
-            transpile_args[2 + i] = arg;
-        }
+        // TODO make transpile_args a list too? In any case, should pass the relevant args (and only the relevent ones) to the yaml module.
 
         // Calls the C code that loads the yaml configuration files and generates cmake files for the back-end.
         try transpile.transpileConf(transpile_args);
+
+        if (release_memory) {
+            allocator.free(transpile_args);
+            allocator.free(reserved_dir_path);
+        }
     }
 
     if (args.len > 0) {
-        if (args[0][0] != '-') // should be a valid name
-            build_dir = args[0];
 
-        build_system = getFlagValue(args, "-G") orelse build_system;
-        cml_dir = getFlagValue(args, "-S") orelse cml_dir;
+        // Check if the first arg is a valid build directory name
+        const first: [:0]const u8 = try args.read(0);
+
+        if(first.len > 0 and first[0] != '-') { // i.e. not a flag
+            build_dir = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, first});
+        } else {
+            build_dir = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, configuration.default_build_dir});
+        }
+
     }
 
+    build_system = args.getNextValue("-G") orelse configuration.default_build_system;
+    cml_dir =      args.getNextValue("-S") orelse configuration.InstallDir;
+
     const conf: ConfigParams = .{
+        .project_dir = project_dir,
+
         .build_dir = build_dir,
         .build_system = build_system,
         .cml_dir = cml_dir,
-        .project_dir = project_dir,
     };
-
-    // TODO: add the equivalent code to omit this if compiling with no memory freeing.
-    // config_flag.free(transpile_args[0]);
 
     // Note: this returns a copy of the struct to the caller
     return conf;
 }
 
-fn buildCommand(list: *std.ArrayList([:0]const u8), conf: *const ConfigParams, args: []const [:0]u8) !void {
+/// Takes a linked list of strings, consumes some and appends any extra args from the cli
+fn buildCommand(list: *LinkedList([:0]const u8), conf: *const ConfigParams, args: []const [:0]u8) !void {
+
+    // Sets a CMake define used by the back-end's CMakeLists.txt
     const set_project_dir = try std.fmt.allocPrintZ(allocator, "-DPROJECT_DIR={s}", .{conf.project_dir});
     try list.append(set_project_dir);
 
     try list.append("-B");
-
-    // TODO: Q: will this fuck me up on Windows? A: 100%
-    var build_dir: [:0]const u8 = undefined;
-    if(args.len > 0 and args[0][0] != '-') { // i.e. not a flag
-        build_dir = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{conf.project_dir, args[0]});
-    } else {
-        build_dir = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{conf.project_dir, "build"});
-    }
-
-    try list.append(build_dir);
-    //try list.append(conf.build_dir);
+    try list.append(conf.build_dir);
 
     try list.append("-G");
     try list.append(conf.build_system);
+
     try list.append("-S");
     try list.append(conf.cml_dir);
 
+    // TODO: should consider defining a config-time array of flags to look out for; if found, some logic will be
+    // performed and the flag will be removed from the args list.
 
     // Append any further args for CMake
     for (args) |arg| {
@@ -154,43 +168,48 @@ fn buildCommand(list: *std.ArrayList([:0]const u8), conf: *const ConfigParams, a
     }
 }
 
+/// Takes the cli args and setups the configuration for the back-end
+/// It compiles the yaml configuration files, checks for the existence of the appropriate
+/// directories, and finally calls the back-end to run configuration.
 pub fn hConfig(args: [][:0]u8) anyerror!void {
 
-    // TODO: this should modify args in some way, and remove the consumed args (e.g. -G Ninja), else they'll be passed twice
-    const conf = try config(args);
+    var build_args = try LinkedList([:0]const u8).initFromSlice(&allocator, args);
 
-    var build_args = std.ArrayList([:0]const u8).init(allocator);
+    const conf = try config(&build_args);
 
-    // TODO: make the GUI/TUI program configurable
-    try build_args.append(configuration.gui_program);
+    try build_args.prepend(configuration.gui_program);
     try build_args.append("-DINTERACTIVE=ON");
     try buildCommand(&build_args, &conf, args);
 
-    const arglist = try build_args.toOwnedSlice();
+    const arglist: [][:0]const u8 = try build_args.toSlice(&allocator);
+
     try process.run(arglist);
 
     if (release_memory) {
         allocator.free(conf.project_dir);
-        build_args.deinit();
+        build_args.free();
     }
 }
 
+/// Pretty much the same as the hConfig() function; some args are different of course.
 pub fn hAutoConfig(args: [][:0]u8) anyerror!void {
-    const conf = try config(args);
 
-    var build_args = std.ArrayList([:0]const u8).init(allocator);
+    var build_args = try LinkedList([:0]const u8).initFromSlice(&allocator, args);
 
-    try build_args.append("cmake");
+    const conf = try config(&build_args);
+
+    try build_args.prepend(configuration.backend);
     try build_args.append("-DPRECONFIG_DONE=ON");
     try build_args.append("-DINTERACTIVE=OFF");
     try buildCommand(&build_args, &conf, args);
     try build_args.append("--no-warn-unused-cli");
 
-    const arglist = try build_args.toOwnedSlice();
+    const arglist: [][:0]const u8 = try build_args.toSlice(&allocator);
+
     try process.run(arglist);
 
     if (release_memory) {
         allocator.free(conf.project_dir);
-        build_args.deinit();
+        build_args.free();
     }
 }
