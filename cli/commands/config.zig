@@ -3,7 +3,6 @@
 const std = @import("std");
 
 const process = @import("../utils/process.zig");
-const parsing = @import("../utils/parsing.zig");
 const transpile = @import("../utils/transpile.zig");
 const configuration = @import("../configuration.zig");
 const search = @import("../utils/search-filesystem.zig");
@@ -12,10 +11,6 @@ const list_module = @import("../utils/linked-list.zig");
 const Node = list_module.Node;
 const ListError = list_module.ListError;
 const LinkedList = list_module.LinkedList;
-
-// TODO: remove these once linked list is integrated in this module.
-const getFlag = parsing.getFlag;
-const getFlagValue = parsing.getFlagValue;
 
 const revSearch = search.revSearch;
 const stdout = std.io.getStdOut().writer();
@@ -50,9 +45,8 @@ fn config(args: *LinkedList([:0]const u8)) anyerror!ConfigParams {
         // Check if the default CMakeLists should be ignored
         var idx: usize = undefined;
         var addr: *Node([:0]const u8) = undefined;
-        const override_flag: [:0]const u8 = "--override";
 
-        if (args.where(override_flag, &idx, &addr)) {
+        if (args.where(configuration.override_flag, &idx, &addr)) {
             args.removeFromPtr(addr);
             is_cmakelists_present = false;
         } else {
@@ -70,17 +64,22 @@ fn config(args: *LinkedList([:0]const u8)) anyerror!ConfigParams {
     } else { // The configuration is fully up to Hammer
 
         // Reverse search from pwd for the configuration directory
-        const target: [:0]const u8 = configuration.configuration_dir;
-        project_dir = revSearch(allocator, target) catch |err| switch (err) {
+        project_dir = revSearch(allocator, configuration.configuration_dir) catch |err| switch (err) {
             error.NotFound => {
-                try stdout.print("Failed to locate configuration directory '{s}'.\nTry going to the top level and run:\nhammer init\n.", .{target});
+                try stdout.print("Failed to locate configuration directory '{s}'.\nTry going to the top level and run:\nhammer init\n.", .{configuration.configuration_dir});
                 std.process.exit(0);
             },
             else => return err,
         };
 
-
         // --- Create compilation dir ---
+        try stdout.print("RevParse located this as project directory: {s}\n", .{project_dir});
+
+        // pork-around until we figure out how to do it in Zig; I hate the hardcoding
+        // const create_dirs_cmd = [][:0]const u8{"mkdir", "-p", project_dir, "/.reserved"};
+        // try process.run(&create_dirs_cmd);
+        try cwd.makePath(project_dir);
+
         const reserved_dir_path = try std.fmt.allocPrintZ(allocator, "{s}/{s}", .{project_dir, configuration.reserved_dir});
 
         if (cwd.access(reserved_dir_path, .{})) |_| {
@@ -178,7 +177,11 @@ pub fn hConfig(args: [][:0]u8) anyerror!void {
     const conf = try config(&build_args);
 
     try build_args.prepend(configuration.gui_program);
-    try build_args.append("-DINTERACTIVE=ON");
+    //try build_args.append("-DINTERACTIVE=ON");
+    for (configuration.default_config_flags) |flag| {
+        try build_args.append(flag);
+    }
+
     try buildCommand(&build_args, &conf, args);
 
     const arglist: [][:0]const u8 = try build_args.toSlice(&allocator);
@@ -199,10 +202,14 @@ pub fn hAutoConfig(args: [][:0]u8) anyerror!void {
     const conf = try config(&build_args);
 
     try build_args.prepend(configuration.backend);
-    try build_args.append("-DPRECONFIG_DONE=ON");
-    try build_args.append("-DINTERACTIVE=OFF");
+    for (configuration.default_autoconfig_flags) |flag| {
+        try build_args.append(flag);
+    }
+
+    // try build_args.append("-DPRECONFIG_DONE=ON");
+    // try build_args.append("-DINTERACTIVE=OFF");
+    // try build_args.append("--no-warn-unused-cli");
     try buildCommand(&build_args, &conf, args);
-    try build_args.append("--no-warn-unused-cli");
 
     const arglist: [][:0]const u8 = try build_args.toSlice(&allocator);
 

@@ -28,7 +28,8 @@ if (DEFINED ${TARGET}_SHARED_LIBS)
                 COMMENT "Creating symlink to ${libname} in ${output_dir}" # TODO: not sure printing this is a great idea.
             )
 
-        endforeach()
-    endif()
+        endif()
+
+    endforeach()
 
 endif()

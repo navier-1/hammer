@@ -201,17 +201,17 @@ static FILE** getTargetFiles(char* reserved_dir, char* target) {
     fprintf(system,   "set(%s_SYSTEM_LIBS \n", target); // TODO: come back to this!
     fprintf(includes, "set(%s_DEPENDENCY_INCLUDES \n", target);
 
-    // 6. Store handles in array
+    // 5. Store handles in array
     unsigned offset = NUM_DEPENDENCY_FILES * elems_placed;
     handles[offset + 0] = shared;
     handles[offset + 1] = statics;
     handles[offset + 2] = system;
     handles[offset + 3] = includes;
 
-    // 7. Increment static counter of elements placed
+    // 6. Increment static counter of elements placed
     elems_placed++;
 
-    // 8. Return the open file handles
+    // 7. Return the open file handles
     return &handles[offset];
 }
 
