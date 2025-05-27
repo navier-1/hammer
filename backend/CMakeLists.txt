@@ -168,6 +168,10 @@ if(EXISTS "${CONFIG_DIR}/${TARGET}_dependencies_shared.cmake")
     include(${CONFIG_DIR}/${TARGET}_dependencies_shared.cmake)
     include(${CONFIG_DIR}/${TARGET}_dependencies_static.cmake)
     include(${CONFIG_DIR}/${TARGET}_dependencies_system.cmake)
+    
+    target_link_libraries(      ${TARGET} PRIVATE ${${TARGET}_SHARED_LIBS} ${${TARGET}_STATIC_LIBS} )
+    target_include_directories( ${TARGET} PRIVATE ${${TARGET}_DEPENDENCY_INCLUDES} )
+    # TODO: setup procedure to search and link SYSTEM libraries
 endif()
 
 # TODO: integrate vcpkg set(VCPKG_LIBRARIES  ${VCPKG_LIBRARIES} CACHE STRING "List of vcpkg-managed libraries")
@@ -180,16 +184,6 @@ endif()
 # =======================[ Validate inputs ]===========================
 # TODO: rewrite this! A lot of the logic has changed.
 # include(${HAMMER_DIR}/utility_scripts/input_validation.cmake)
-
-
-# =======================[ Run git support ]===========================
-# This feature is currently inactive. Not sure what to do with it.
-
-# if(NOT DEFINED GIT_CONFIGURED)
-#     include(${HAMMER_DIR}/git/GitConfig.cmake)
-#     set(GIT_CONFIGURED ON CACHE BOOL "Git configuration has been performed.")
-#     mark_as_advanced(GIT_CONFIGURED)
-# endif()
 
 # =======================[ Load codeQL ]===========================
 # This feature is currently inactive.
@@ -498,6 +492,12 @@ endif()
 if(USE_CODEQL)
     message(STATUS "To compile the project and generate the CodeQL DB, run:\n\n $ cmake --build <BUILD_DIR> --target codeql \n")
 endif()
+
+#======================[ Place runtime libs in binary dir]==============================
+# This creates symlinks (unix systems) or straight-up copies (windows) of runtime dependencies
+# for any target executable, so that the binary may be test-run from the directory it is emitted to.
+include(${HAMMER_DIR}/utility_scripts/add_runtime_libs.cmake)
+
 
                                         endforeach() # ends the foreach(TARGET) loop
                                         

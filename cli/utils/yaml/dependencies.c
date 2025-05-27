@@ -158,20 +158,13 @@ static FILE** getTargetFiles(char* reserved_dir, char* target) {
     }
     strncpy(targets[elems_placed], target, MAX_TARGET_LEN);
 
-
-    // 1. Lay out some string pieces
-    const char* include_dirs_string_start = "target_include_directories(";
-    const char* shared_libs_string_start  = "target_link_libraries(";
-    const char* static_libs_string_start  = "target_link_libraries(";
-    const char* system_libs_string_start  = "set(SYSTEM_LIBS "; // TODO: come back to this
-
-    // 2. Open output files
+    // 1. Open output files
     const char* _shared   = "_dependencies_shared.cmake";
     const char* _statics  = "_dependencies_static.cmake";
     const char* _includes = "_dependencies_include.cmake"; // 28 bytes + 1
     const char* _system   = "_dependencies_system.cmake";
 
-    // 3. Construct full file names
+    // 2. Construct full file names
     // Buffers for file names
     char __shared[MAX_NAMESIZE], __statics[MAX_NAMESIZE], __includes[MAX_NAMESIZE], __system[MAX_NAMESIZE];
     size_t max_filename_len = strlen(reserved_dir) + strlen(target) + strlen(_includes) + 1; // +1 for '/' separator
@@ -189,7 +182,7 @@ static FILE** getTargetFiles(char* reserved_dir, char* target) {
     snprintf(__system,   len_filename + 1, "%s/%s%s", reserved_dir, target, _system);
     snprintf(__includes, len_filename + 2, "%s/%s%s", reserved_dir, target, _includes); // 1 longer!
 
-    // 4. Now open the files for the first time
+    // 3. Now open the files for the first time
     FILE* shared   = fopen(__shared,   "w");
     FILE* statics  = fopen(__statics,  "w");
     FILE* system   = fopen(__system,   "w");
@@ -201,13 +194,12 @@ static FILE** getTargetFiles(char* reserved_dir, char* target) {
         return NULL;
     }
     
-    // 5. Write CMake boilerplate code
-    
-    // TODO: should this always be private? Should something specific trigger the change?
-    fprintf(shared,   "%s%s PRIVATE\n", shared_libs_string_start,  target);
-    fprintf(statics,  "%s%s PRIVATE\n", static_libs_string_start,  target);
-    fprintf(system,   "%s%s PRIVATE\n", system_libs_string_start,  target); // TODO: come back to this!
-    fprintf(includes, "%s%s PRIVATE\n", include_dirs_string_start, target);
+    // 4. Write CMake boilerplate code
+
+    fprintf(shared,   "set(%s_SHARED_LIBS \n", target);
+    fprintf(statics,  "set(%s_STATIC_LIBS \n", target);
+    fprintf(system,   "set(%s_SYSTEM_LIBS \n", target); // TODO: come back to this!
+    fprintf(includes, "set(%s_DEPENDENCY_INCLUDES \n", target);
 
     // 6. Store handles in array
     unsigned offset = NUM_DEPENDENCY_FILES * elems_placed;
@@ -308,8 +300,9 @@ static int writeDependencies(char* reserved_dir, struct local* local_tree ) {
             }
 
             // TODO: This was here to test if this adds gtest as link target, though it's not the cleanest way to do so.
-            fprintf(shared, "  %s \n",     lib->name);
-            fprintf(shared, "  %s_main\n", lib->name);
+            // TODO: figure out where to run them exactly
+            fprintf(statics, "  %s \n",     lib->name);
+            fprintf(statics, "  %s_main\n", lib->name);
             // TODO: should implement a simple and clean way to pass targets as dependencies from dependencies.yml.
             // Something along the lines of:
             // target_depends:
