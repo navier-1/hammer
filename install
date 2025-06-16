@@ -45,5 +45,7 @@ sudo zig build install --prefix /usr/local
 cd - > /dev/null
 sudo rm -rf $HAMMER_TMP_DIR
 
+# TODO: make the Hammer install dir available in something like an env variable, so that it may
+#  be freely changed without breaking uninstall or other scripts
 echo "Done! Run 'hammer help' to get started."
 

@@ -1,46 +1,66 @@
 #!/bin/bash
 set -e
 
-read -rp "Linux or MacOS? [linux] " OS
-OS=${OS:-"linux"}
+#read -rp "Linux or MacOS? [linux] " OS
+#OS=${OS:-"linux"}
+
+if command -v apt-get &>/dev/null; then
+    OS="Linux"
+    PACMAN="sudo apt"
+elif command -v brew &>/dev/null; then
+    OS="macOS"
+    PACMAN="brew"
+else
+    echo "Failed to locate a supported package manager. Currently supported: apt, brew"
+fi
+
 ZIG_URL="https://ziglang.org/builds"
 
 # For now, Linux == debian-based
 if [[ $OS == [lL][iI][nN][uU][xX] ]]; then
-    PACMAN="sudo apt"
     OPTS="-y"
-    PLATFORM_SPECIFIC_PACKAGES="ninja-build cmake cmake-curses-gui "
-    ZIG_TAR="zig-linux-x86_64-0.15.0-dev.552+bc2f7c754.tar.xz"
+    PLATFORM_SPECIFIC_PACKAGES="ninja-build cmake cmake-curses-gui libyaml-dev"
+    ZIG_BASENAME="zig-x86_64-linux-0.15.0-dev.828+3ce8d19f7"
+    ZIG_TAR="$ZIG_BASENAME.tar.xz"
 elif [[ $OS == [mM][aA][cC]* ]]; then
-    PACMAN="brew"
-    PLATFORM_SPECIFIC_PACKAGES="ninja"
-    ZIG_TAR="zig-x86_64-macos-0.15.0-dev.777+6810ffa42.tar.xz"
+    PLATFORM_SPECIFIC_PACKAGES="ninja libyaml"
+    ZIG_BASENAME="zig-x86_64-macos-0.15.0-dev.828+3ce8d19f7"
+    ZIG_TAR="$ZIG_BASENAME.tar.xz"
 else
     echo "Unknown OS: $OS"
-    echo "Supported OSs are: Linux, macOS"
+    echo "Supported OSs are: Linux (Debian-based), macOS"
     exit 1
 fi
 
 $PACMAN update $OPTS
-$PACMAN install curl libyaml make $PLATFORM_SPECIFIC_PACKAGES $OPTS
+$PACMAN install \
+    curl \
+    make \
+    $PLATFORM_SPECIFIC_PACKAGES \
+    $OPTS
 
 echo "Installing CYaml..."
-git clone https://github.com/tlsa/libcyaml.git
-cd libcyaml
+if [ ! -d "$(pwd)/libcyaml" ]; then
+  git clone https://github.com/tlsa/libcyaml.git
+fi
 
+cd libcyaml
 make
 sudo make install # TODO: reinstall if already present 
 cd ..
 
-echo "Installing Zig..."
+echo "Downloading and installing Zig..."
 curl -O $ZIG_URL/$ZIG_TAR
 tar -xf $ZIG_TAR
 
 mv $ZIG_TAR /usr/local/zig
-ln -s /usr/local/zig/zig /usr/local/bin/zig
+sudo ln -sf /usr/local/zig/zig /usr/local/bin/zig
 
 # Cleanup
-rm zig-linux-x86_64-0.15.0-dev.552+bc2f7c754.tar.xz
-rm -rf zig-linux-x86_64-0.15.0-dev.552+bc2f7c754
+#rm $ZIG_TAR
+rm -rf $ZIG_BASENAME
 rm -rf libcyaml
+
+echo ""
+echo "Done! All dependencies installed. Run the 'install' script at the top level to build and install Hammer."
 
