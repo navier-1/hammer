@@ -1,49 +1,91 @@
 #!/bin/bash
 #
 # This script:
-# - installs the back-end CMake scripts
 # - compiles the front-end CLI
 # - installs it
-
-
+# - installs the back-end CMake scripts
 set -e
 
 # Will need to make this up to the user and still work with everything else
-HAMMER_INSTALL_DIR="/usr/local/lib/hammer"
+
+HAMMER_CLI="/usr/local/bin/hammer"
+HAMMER_BACKEND_DIR="/usr/local/lib/hammer"
+HAMMER_CONFIG_FILE="/usr/local/etc/hammer.yml"
 HAMMER_TMP_DIR="./hammer-tmp"
 
-# Delete installation files
-if [ -e $HAMMER_INSTALL_DIR ]; then
-    $HAMMER_INSTALL_DIR/installers/uninstall.sh
-else
-    ./installers/uninstall.sh
-fi
+# Delete installation files (no harm no foul)
+# TBD: should this be kept in uninstall.sh?
+sudo rm -rf $HAMMER_BACKEND_DIR
+sudo rm -f  $HAMMER_CLI
 
 # If the tmp_dir exists (i.e. running hammer update) install those files
 # otherwise, the install script is assumed to be running from the cloned repo
 if [ -e $HAMMER_TMP_DIR ]; then
-    sudo cp -rf $HAMMER_TMP_DIR/backend    $HAMMER_INSTALL_DIR
-    sudo cp -rf $HAMMER_TMP_DIR/installers $HAMMER_INSTALL_DIR
+    sudo cp -rf $HAMMER_TMP_DIR/backend    $HAMMER_BACKEND_DIR
+    sudo cp -rf $HAMMER_TMP_DIR/installers $HAMMER_BACKEND_DIR
 
     HAMMER_CLI_DIR=$HAMMER_TMP_DIR/cli
 else
-    sudo cp -rf ./backend    $HAMMER_INSTALL_DIR
-    sudo cp -rf ./installers $HAMMER_INSTALL_DIR
+    sudo cp -rf ./backend    $HAMMER_BACKEND_DIR
+    sudo cp -rf  uninstall.sh $HAMMER_BACKEND_DIR
     HAMMER_CLI_DIR=./cli
 fi
 
 
-sudo bash -c "sed 's|@@HAMMER_INSTALL_DIR@@|$HAMMER_INSTALL_DIR|g' $HAMMER_INSTALL_DIR/CMakeLists.txt > $HAMMER_INSTALL_DIR/CMakeLists.txt.tmp"
-sudo rm $HAMMER_INSTALL_DIR/CMakeLists.txt
-sudo mv $HAMMER_INSTALL_DIR/CMakeLists.txt.tmp $HAMMER_INSTALL_DIR/CMakeLists.txt
+sudo bash -c "sed 's|@@HAMMER_BACKEND_DIR@@|$HAMMER_BACKEND_DIR|g' $HAMMER_BACKEND_DIR/CMakeLists.txt > $HAMMER_BACKEND_DIR/CMakeLists.txt.tmp"
+sudo rm $HAMMER_BACKEND_DIR/CMakeLists.txt
+sudo mv $HAMMER_BACKEND_DIR/CMakeLists.txt.tmp $HAMMER_BACKEND_DIR/CMakeLists.txt
 
-# Build and install CLI
+# Compile and install CLI
 cd $HAMMER_CLI_DIR
-sudo zig build install --prefix /usr/local
+
+gcc -o hammer \
+    main.c \
+    configuration.c \
+    \
+    commands/new.c \
+    commands/init.c \
+    commands/config.c \
+    commands/commands.c \
+    \
+    utils/filecopy.c \
+    utils/linked_list.c \
+    utils/reverse_search.c \
+    \
+    yaml/config.c \
+    yaml/transpile.c \
+    yaml/dependencies.c \
+    yaml/sources.c \
+    yaml/toolchain.c \
+    yaml/defines.c \
+    yaml/settings.c \
+    \
+    \
+    -I. \
+    -Iyaml \
+    -Iutils \
+    -Icommands \
+    \
+    -DHAMMER_CONFIG_FILE="\"$HAMMER_CONFIG_FILE\"" \
+    -DHAMMER_BACKEND_DIR="\"$HAMMER_BACKEND_DIR\"" \
+    \
+    -lyaml \
+    -lcyaml \
+
+#    -static \
+#    -fsanitize=address \
+
+# TODO: optionally define -DMEM_FREE
+
+sudo mv hammer $HAMMER_CLI
+sudo cp -r templates $HAMMER_BACKEND_DIR
 
 # Return to original dir + silence the print
 cd - > /dev/null
+
+# This only makes sense if the 'update' command was used
 sudo rm -rf $HAMMER_TMP_DIR
+
 
 echo "Done! Run 'hammer help' to get started."
 

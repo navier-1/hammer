@@ -1,6 +1,8 @@
 // Copyright (c) 2025
 // Licensed under the GPLv3 — see LICENSE file for details.
 
+// Note: this is currenlty a stub. The core idea is to allow for the user to add a new custom toolchain as they desire.
+
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
