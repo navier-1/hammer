@@ -18,20 +18,7 @@ HAMMER_TMP_DIR="./hammer-tmp"
 sudo rm -rf $HAMMER_BACKEND_DIR
 sudo rm -f  $HAMMER_CLI
 
-# If the tmp_dir exists (i.e. running hammer update) install those files
-# otherwise, the install script is assumed to be running from the cloned repo
-if [ -e $HAMMER_TMP_DIR ]; then
-    sudo cp -rf $HAMMER_TMP_DIR/backend    $HAMMER_BACKEND_DIR
-    sudo cp -rf $HAMMER_TMP_DIR/installers $HAMMER_BACKEND_DIR
-
-    HAMMER_CLI_DIR=$HAMMER_TMP_DIR/cli
-else
-    sudo cp -rf ./backend    $HAMMER_BACKEND_DIR
-    sudo cp -rf  uninstall.sh $HAMMER_BACKEND_DIR
-    HAMMER_CLI_DIR=./cli
-fi
-
-
+## Configure the (optional) CML.txt
 sudo bash -c "sed 's|@@HAMMER_BACKEND_DIR@@|$HAMMER_BACKEND_DIR|g' $HAMMER_BACKEND_DIR/CMakeLists.txt > $HAMMER_BACKEND_DIR/CMakeLists.txt.tmp"
 sudo rm $HAMMER_BACKEND_DIR/CMakeLists.txt
 sudo mv $HAMMER_BACKEND_DIR/CMakeLists.txt.tmp $HAMMER_BACKEND_DIR/CMakeLists.txt
@@ -73,19 +60,13 @@ gcc -o hammer \
     -lcyaml \
 
 #    -static \
-#    -fsanitize=address \
-
-# TODO: optionally define -DMEM_FREE
+#    -fsanitize=address \  # Debugging
 
 sudo mv hammer $HAMMER_CLI
 sudo cp -r templates $HAMMER_BACKEND_DIR
 
 # Return to original dir + silence the print
 cd - > /dev/null
-
-# This only makes sense if the 'update' command was used
-sudo rm -rf $HAMMER_TMP_DIR
-
 
 echo "Done! Run 'hammer help' to get started."
 

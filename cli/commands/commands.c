@@ -7,7 +7,6 @@ int h_new(int, char**);
 int h_config(int, char**);
 // int h_build(int, char**);
 // int h_docs(int, char**);
-// int h_update(int, char**);
 // int h_install(int, char**);
 // int h_rm_toolchain(int, char**);
 // int h_add_toolchain(int, char**);
